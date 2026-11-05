@@ -1,0 +1,238 @@
+<div class="card filtros-card">
+  <div class="filtros">
+    <span class="etiqueta-filtro">Filtrar</span>
+    <select [ngModel]="filtroRol()" (ngModelChange)="filtroRol.set($event)" aria-label="Filtrar por rol">
+      <option value="">Todos los roles</option>
+      @for (rol of roles; track rol.valor) {
+        <option [value]="rol.valor">{{ rol.etiqueta }}</option>
+      }
+    </select>
+    <select [ngModel]="filtroEstado()" (ngModelChange)="filtroEstado.set($event)" aria-label="Filtrar por estado">
+      <option value="">Todos los estados</option>
+      <option value="activo">Activo</option>
+      <option value="inactivo">Inactivo</option>
+    </select>
+  @if (puedeAdministrar) {
+  <button class="btn-primary btn-icono" type="button" (click)="abrirCrear()">
+    <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+    Crear usuario
+  </button>
+  }
+  </div>
+</div>
+
+<div class="card tabla-card">
+  @if (cargando()) {
+    <p class="meta pad">Cargando usuarios...</p>
+  } @else if (mensajeError()) {
+    <div class="estado-error">
+      <p>{{ mensajeError() }}</p>
+      <button class="btn-secundario" type="button" (click)="cargar()">Reintentar</button>
+    </div>
+  } @else {
+    <table class="tabla">
+      <thead>
+        <tr>
+          <th>Nombre</th>
+          <th>Correo</th>
+          <th>Area</th>
+          <th>Rol</th>
+          <th>Estado</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (u of filtrados(); track u.id) {
+          <tr>
+            <td>
+              <div class="celda-nombre">
+                <div class="avatar">{{ iniciales(u.nombreCompleto) }}</div>
+                <button class="nombre-link" type="button" (click)="abrirVer(u)">{{ u.nombreCompleto }}</button>
+              </div>
+            </td>
+            <td class="correo">{{ u.email }}</td>
+            <td>{{ u.area ?? 'Sin area' }}</td>
+            <td><span [class]="claseRol(u.rol)">{{ etiquetaRol(u.rol) }}</span></td>
+            <td>
+              <span class="badge-estado" [class.badge-estado-resuelto]="u.estado === 'activo'"
+                    [class.badge-estado-cerrado]="u.estado !== 'activo'">
+                {{ u.estado === 'activo' ? 'Activo' : 'Inactivo' }}
+              </span>
+            </td>
+            <td class="acciones">
+              @if (puedeAdministrar) {
+              <button class="accion-icono" type="button" (click)="abrirEditar(u)"
+                      title="Editar usuario" [attr.aria-label]="'Editar a ' + u.nombreCompleto">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+                  <path d="m16 3 5 5-12 12-6 1 1-6L16 3Z M13 6l5 5"/>
+                </svg>
+              </button>
+              <button class="accion-icono peligro" type="button" (click)="eliminar(u)"
+                      title="Eliminar usuario" [attr.aria-label]="'Eliminar a ' + u.nombreCompleto">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+                  <path d="M3 6h18 M9 6V3h6v3 M5 6l1 15h12l1-15 M10 10v7 M14 10v7"/>
+                </svg>
+              </button>
+              }
+            </td>
+          </tr>
+        } @empty {
+          <tr>
+            <td colspan="6" class="vacio">No hay usuarios con esos filtros.</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+    <div class="usuarios-mobile-list" aria-label="Listado de usuarios">
+      @for (u of filtrados(); track u.id) {
+        <article class="usuario-card">
+          <div class="usuario-card-head">
+            <div class="avatar">{{ iniciales(u.nombreCompleto) }}</div>
+            <div class="usuario-card-identidad">
+              <button class="nombre-link" type="button" (click)="abrirVer(u)">{{ u.nombreCompleto }}</button>
+              <span class="correo">{{ u.email }}</span>
+            </div>
+          </div>
+
+          <div class="usuario-card-grid">
+            <div>
+              <span class="dato-label">Área</span>
+              <strong>{{ u.area ?? 'Sin área' }}</strong>
+            </div>
+            <div>
+              <span class="dato-label">Rol</span>
+              <span [class]="claseRol(u.rol)">{{ etiquetaRol(u.rol) }}</span>
+            </div>
+            <div>
+              <span class="dato-label">Estado</span>
+              <span class="badge-estado" [class.badge-estado-resuelto]="u.estado === 'activo'"
+                    [class.badge-estado-cerrado]="u.estado !== 'activo'">
+                {{ u.estado === 'activo' ? 'Activo' : 'Inactivo' }}
+              </span>
+            </div>
+          </div>
+
+          @if (puedeAdministrar) {
+            <div class="usuario-card-actions">
+              <button class="accion-icono editar" type="button" (click)="abrirEditar(u)"
+                      title="Editar usuario" [attr.aria-label]="'Editar a ' + u.nombreCompleto">
+                <svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+                  <path d="m16 3 5 5-12 12-6 1 1-6L16 3Z M13 6l5 5"/>
+                </svg>
+                <span>Editar</span>
+              </button>
+              <button class="accion-icono peligro" type="button" (click)="eliminar(u)"
+                      title="Eliminar usuario" [attr.aria-label]="'Eliminar a ' + u.nombreCompleto">
+                <svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+                  <path d="M3 6h18 M9 6V3h6v3 M5 6l1 15h12l1-15 M10 10v7 M14 10v7"/>
+                </svg>
+                <span>Eliminar</span>
+              </button>
+            </div>
+          }
+        </article>
+      } @empty {
+        <div class="vacio mobile-vacio">No hay usuarios con esos filtros.</div>
+      }
+    </div>
+    <p class="meta pad-inferior">{{ filtrados().length }} usuarios</p>
+  }
+</div>
+
+@if (modalAbierto()) {
+  <div class="modal-backdrop" (click)="cerrarModal()">
+    <section class="modal" role="dialog" aria-modal="true" [attr.aria-label]="tituloModal()" (click)="$event.stopPropagation()">
+      <header class="modal-header">
+        <div>
+          <h2>{{ tituloModal() }}</h2>
+        </div>
+        <button class="modal-cerrar" type="button" aria-label="Cerrar" (click)="cerrarModal()">x</button>
+      </header>
+
+      @if (esLectura) {
+        <div class="detalle-usuario">
+          <div class="detalle-avatar">{{ iniciales(usuarioSeleccionado()?.nombreCompleto ?? '') }}</div>
+          <div>
+            <h3>{{ usuarioSeleccionado()?.nombreCompleto }}</h3>
+            <p>{{ usuarioSeleccionado()?.email }}</p>
+          </div>
+        </div>
+
+        <dl class="detalle-grid">
+          <div><dt>Rol</dt><dd>{{ etiquetaRol(form.rol) }}</dd></div>
+          <div><dt>Area</dt><dd>{{ etiquetaArea() }}</dd></div>
+          <div><dt>Estado</dt><dd>{{ usuarioSeleccionado()?.estado === 'activo' ? 'Activo' : 'Inactivo' }}</dd></div>
+        </dl>
+      } @else {
+        <form class="formulario" #usuarioForm="ngForm" (ngSubmit)="guardar()">
+          <label>
+            <span>Nombres</span>
+            <input name="nombres" [(ngModel)]="form.nombres" autocomplete="given-name" required>
+          </label>
+
+          <label>
+            <span>Apellidos</span>
+            <input name="apellidos" [(ngModel)]="form.apellidos" autocomplete="family-name" required>
+          </label>
+
+          <label class="campo-doble">
+            <span>Correo institucional</span>
+            <input type="email" name="email" [(ngModel)]="form.email" autocomplete="email" required>
+          </label>
+
+          <label>
+            <span>Rol</span>
+            <select name="rol" [(ngModel)]="form.rol" required>
+              @for (rol of roles; track rol.valor) {
+                <option [value]="rol.valor">{{ rol.etiqueta }}</option>
+              }
+            </select>
+          </label>
+
+          <label>
+            <span>Area</span>
+            <select name="areaId" [(ngModel)]="form.areaId" required>
+              @for (area of areas; track area.id) {
+                <option [ngValue]="area.id">{{ area.nombre }}</option>
+              }
+            </select>
+          </label>
+
+          <label>
+            <span>Estado</span>
+            <select name="estado" [(ngModel)]="form.estado" [disabled]="guardando()" required>
+              <option value="activo">Activo</option>
+              <option value="inactivo">Inactivo</option>
+            </select>
+          </label>
+
+          <label>
+            <span>{{ modoModal() === 'crear' ? 'Contraseña' : 'Nueva contraseña' }}</span>
+            <input type="password" name="password" [(ngModel)]="form.password" autocomplete="new-password"
+                   [required]="modoModal() === 'crear'" minlength="6"
+                   [placeholder]="modoModal() === 'editar' ? 'Opcional' : ''">
+          </label>
+
+          @if (errorGuardado()) {
+            <p class="campo-doble error-text" role="alert">{{ errorGuardado() }}</p>
+          }
+          <footer class="modal-footer">
+            <button class="btn-secundario" type="button" (click)="cerrarModal()">Cancelar</button>
+            <button class="btn-primary" type="submit" [disabled]="!formValido() || guardando()">
+              {{ guardando() ? 'Guardando...' : 'Guardar' }}
+            </button>
+          </footer>
+        </form>
+      }
+
+      @if (esLectura) {
+        <footer class="modal-footer">
+          <button class="btn-secundario" type="button" (click)="cerrarModal()">Cerrar</button>
+          @if (puedeAdministrar) {
+            <button class="btn-primary" type="button" (click)="abrirEditar(usuarioSeleccionado()!)">Editar</button>
+          }
+        </footer>
+      }
+    </section>
+  </div>
+}

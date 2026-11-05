@@ -1,0 +1,9 @@
+.git
+node_modules
+.angular/cache
+dist
+coverage
+npm-debug.log*
+.idea
+.vscode
+.DS_Store

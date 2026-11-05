@@ -1,0 +1,84 @@
+<div class="card tabla-card">
+  <div class="barra-filtros">
+    <div class="filtros">
+      <div class="buscador-tabla">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+        <input type="text" placeholder="Buscar por ticket o solicitante" aria-label="Buscar tickets" [(ngModel)]="busqueda" />
+      </div>
+      <select [(ngModel)]="filtroEstado" aria-label="Filtrar por estado">
+        <option value="">Todos los estados</option>
+        <option value="abierto">Abierto</option>
+        <option value="en_progreso">En progreso</option>
+        <option value="en_espera">En espera</option>
+        <option value="resuelto">Resuelto</option>
+        <option value="cerrado">Cerrado</option>
+      </select>
+      <select [(ngModel)]="filtroPrioridad" aria-label="Filtrar por prioridad">
+        <option value="">Todas las prioridades</option>
+        <option value="baja">Baja</option>
+        <option value="media">Media</option>
+        <option value="alta">Alta</option>
+        <option value="critica">Crítica</option>
+      </select>
+      <select [(ngModel)]="filtroCategoria" aria-label="Filtrar por categoría">
+        <option value="">Todas las categorías</option>
+        @for (c of categoriasDisponibles(); track c) { <option [value]="c">{{ c }}</option> }
+      </select>
+    </div>
+  </div>
+
+  @if (mensajeError()) { <p class="error-text pad">{{ mensajeError() }}</p> }
+
+  @if (cargando()) {
+    <p class="meta pad">Cargando tickets...</p>
+  } @else {
+    <div class="tabla-scroll" tabindex="0" role="region" aria-label="Lista de tickets">
+      <table class="tabla">
+        <thead>
+          <tr>
+            <th>Ticket</th><th>Solicitante</th><th>Categoría</th>
+            <th>Prioridad</th><th>Estado</th><th>Técnico</th><th>Fecha</th>@if (config.actual().slaActivo) { <th>Plazo SLA</th> }<th><span class="sr-only">Acciones</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (t of filtrados(); track t.id) {
+            <tr>
+              <td class="ticket-celda"><a [routerLink]="['/tickets', t.id]" class="ticket-asunto">{{ t.asunto }}</a><span class="ticket-codigo">{{ t.codigoUnico }}</span></td>
+              <td><div class="persona"><span class="persona-avatar" aria-hidden="true">{{ iniciales(t.solicitante) }}</span><span>{{ t.solicitante }}</span></div></td>
+              <td><span class="categoria-chip">{{ t.categoria }}</span></td>
+              <td>
+                <select class="select-inline select-prioridad" [attr.data-prioridad]="t.prioridad" [attr.aria-label]="'Prioridad de ' + t.codigoUnico" [ngModel]="prioridadIdActual(t.prioridad)" [disabled]="actualizandoPrioridad() === t.id || prioridades().length === 0" (change)="actualizarPrioridad(t, $event)">
+                  @for (p of prioridades(); track p.id) { <option [value]="p.id">{{ p.nombre | titlecase }}</option> }
+                </select>
+              </td>
+              <td>
+                <select class="select-inline select-estado" [attr.data-estado]="t.estado" [attr.aria-label]="'Estado de ' + t.codigoUnico" [ngModel]="estadoIdActual(t.estado)" [disabled]="actualizandoEstado() === t.id || estados().length === 0" (change)="actualizarEstado(t, $event)">
+                  @for (e of estados(); track e.id) { <option [value]="e.id">{{ etiquetaEstado(e.nombre) }}</option> }
+                </select>
+              </td>
+              <td>
+                @if (puedeAsignar()) {
+                  <select class="select-inline select-tecnico" [class.sin-asignar]="!t.asignadoA" [attr.aria-label]="'Técnico de ' + t.codigoUnico" [ngModel]="tecnicoIdActual(t.asignadoA)" [disabled]="asignandoTecnico() === t.id || tecnicos().length === 0" (change)="asignarTecnico(t, $event)">
+                    <option value="" disabled>Sin asignar</option>
+                    @for (tecnico of tecnicos(); track tecnico.id) { <option [value]="tecnico.id">{{ tecnico.nombre }}</option> }
+                  </select>
+                } @else {
+                  {{ t.asignadoA ?? 'Sin asignar' }}
+                }
+              </td>
+              <td class="fecha">{{ config.fecha(t.fechaCreacion) }}</td>
+              @if (config.actual().slaActivo) { <td><span class="sla-chip" [class.vencido]="config.sla(t).vencido" [attr.title]="config.sla(t).limite ? 'Vence: ' + config.fecha(config.sla(t).limite) : null">{{ config.sla(t).texto }}</span></td> }
+              <td class="col-acciones"><a [routerLink]="['/tickets', t.id]" class="abrir-ticket" [attr.aria-label]="'Atender ticket ' + t.codigoUnico" title="Atender ticket"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M7 7h10v10"/></svg></a></td>
+            </tr>
+          } @empty {
+            <tr><td [attr.colspan]="config.actual().slaActivo ? 9 : 8" class="vacio">No hay tickets que coincidan con los filtros.</td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    <footer class="tabla-footer">
+      <span>{{ filtrados().length }} de {{ tickets().length }} tickets</span>
+      @if (busqueda() || filtroEstado() || filtroPrioridad() || filtroCategoria()) { <button type="button" (click)="limpiarFiltros()">Limpiar filtros <span aria-hidden="true">×</span></button> }
+    </footer>
+  }
+</div>

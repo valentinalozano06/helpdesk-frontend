@@ -1,0 +1,153 @@
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: 'Segoe UI', Roboto, Arial, sans-serif;
+  background: #f2f5f9;
+  color: #1c2b39;
+}
+a { color: inherit; }
+button {
+  cursor: pointer;
+  font-family: inherit;
+}
+.btn-primary {
+  background: #0b3d63;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 10px 18px;
+  font-size: 14px;
+  font-weight: 600;
+}
+.btn-primary:hover { background: #0f4f80; }
+.btn-primary:disabled { background: #9fb3c2; cursor: not-allowed; }
+.btn-secondary {
+  background: transparent;
+  color: #0b3d63;
+  border: 1px solid #0b3d63;
+  border-radius: 6px;
+  padding: 9px 16px;
+  font-size: 14px;
+}
+.card {
+  background: #fff;
+  border-radius: 10px;
+  box-shadow: 0 2px 10px rgba(15, 40, 60, 0.08);
+  padding: 20px;
+}
+.form-field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px; }
+.form-field label { font-size: 13px; font-weight: 600; color: #4a5a68; }
+.form-field input, .form-field select, .form-field textarea {
+  padding: 10px 12px;
+  border: 1px solid #d3dce4;
+  border-radius: 6px;
+  font-size: 14px;
+}
+.error-text { color: #b3261e; font-size: 13px; }
+.badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.6;
+}
+
+/* Prioridad: pastilla solida (coincide con el prototipo Figma) */
+.badge-baja { background: #2f8fe0; color: #fff; }
+.badge-media { background: #e0b020; color: #fff; }
+.badge-alta { background: #f08a1f; color: #fff; }
+.badge-critica { background: #d6362f; color: #fff; }
+
+/* Estado: pastilla suave con borde */
+.badge-estado {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  border: 1px solid transparent;
+}
+.badge-estado-abierto { background: #fdecec; color: #c23b3b; border-color: #f6c9c9; }
+.badge-estado-en_progreso { background: #fdf1e2; color: #c9791b; border-color: #f4d9b2; }
+.badge-estado-en_espera { background: #fdf7de; color: #ab8a12; border-color: #f0e3a6; }
+.badge-estado-resuelto { background: #e7f6ec; color: #1f8a4c; border-color: #c1e8cf; }
+.badge-estado-cerrado { background: #edeff2; color: #5a6673; border-color: #d7dce1; }
+
+/* Rol (pantalla Usuarios) */
+.badge-rol { display: inline-block; padding: 3px 10px; border-radius: 6px; font-size: 12px; font-weight: 600; }
+.badge-rol-rol_solicitante { background: #eef1f4; color: #4a5a68; }
+.badge-rol-rol_tecnico { background: #e1edfb; color: #1d5fb8; }
+.badge-rol-rol_jefatura { background: #ece1fb; color: #6a35c9; }
+.badge-rol-rol_admin { background: #f6e1fb; color: #a825c9; }
+
+/* Preferencias compartidas: se aplican desde ConfiguracionService. */
+html { --app-acento: #d6f58a; }
+html.sin-animaciones *, html.sin-animaciones *::before, html.sin-animaciones *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+html.vista-compacta .tabla td, html.vista-compacta .tabla th, html.vista-compacta .table-scroll td, html.vista-compacta .table-scroll th, html.vista-compacta .equipo td, html.vista-compacta .equipo th { padding-top: 8px !important; padding-bottom: 8px !important; }
+.aviso-global { position:fixed; z-index:1200; right:24px; top:24px; max-width:min(430px,calc(100vw - 32px)); display:flex; align-items:center; gap:14px; padding:18px 20px; background:#122d3e; color:#fff; border:1px solid #ffffff30; border-radius:14px; box-shadow:0 12px 36px #122d3e33; font-size:16px; animation: aviso-entrada .2s ease; }
+.aviso-global > span { color:var(--app-acento); font-size:22px; }.aviso-global button { border:0; background:transparent; color:#fff; min-width:36px; min-height:36px; font-size:22px; }
+.sla-chip { display:inline-block; white-space:nowrap; color:#376447; background:#edf6e7; padding:6px 9px; border-radius:8px; font-size:13px; }.sla-chip.vencido { color:#a33b33; background:#ffede8; }
+@keyframes aviso-entrada { from { opacity:0; transform:translateY(-8px); } to { opacity:1; transform:translateY(0); } }
+@media(prefers-reduced-motion:reduce) { .aviso-global { animation:none; } }
+/* Authenticated surfaces: white panels on a blue-gray canvas. */
+.shell .contenido-ruta .card,
+.shell .contenido-ruta .panel,
+.shell .contenido-ruta .metric,
+.shell .contenido-ruta .cola-panel {
+  background: #fff;
+  border-color: transparent;
+  box-shadow: 0 2px 8px rgb(25 48 68 / 5%);
+}
+.shell .contenido-ruta table thead th {
+  background: #eeeee9;
+  color: #36516a;
+  border: 0;
+  font-weight: 600;
+}
+.shell .contenido-ruta table tbody td { border-top: 0; border-bottom: 0; }
+.shell .contenido-ruta table tbody tr { background: #fff; }
+.shell .contenido-ruta table tbody tr:nth-child(even) { background: #f7f7f4; }
+.shell .contenido-ruta table tbody tr:hover { background: #efefea; }
+.shell .contenido-ruta .ticket-hero,
+.shell .contenido-ruta .panel-titulo,
+.shell .contenido-ruta .lista-head,
+.shell .contenido-ruta .form-comentario,
+.shell .contenido-ruta .ficha dl > div + div { border: 0; }
+
+/* Palette borders shared by cards and filter controls across roles. */
+.shell {
+  --filter-border: #c9c9c3;
+  --card-border: #deded9;
+  --filter-focus: #73736b;
+}
+.shell .contenido-ruta .card,
+.shell .contenido-ruta .panel,
+.shell .contenido-ruta .metric,
+.shell .contenido-ruta .recent-panel,
+.shell .contenido-ruta .attention-panel,
+.shell .contenido-ruta .cola-panel {
+  border: 1px solid var(--card-border);
+}
+.shell .contenido-ruta .filtros select,
+.shell .contenido-ruta .filtros input,
+.shell .contenido-ruta .controles input,
+.shell .contenido-ruta .controles select,
+.shell .contenido-ruta .buscador-tabla,
+.shell .contenido-ruta .table-search {
+  border: 1px solid var(--filter-border);
+}
+/* The search wrapper owns the border, avoiding a double outline. */
+.shell .contenido-ruta .buscador-tabla input,
+.shell .contenido-ruta .table-search input { border: 0; outline: 0; }
+.shell .contenido-ruta .filtros select:focus-visible,
+.shell .contenido-ruta .filtros > input:focus-visible,
+.shell .contenido-ruta .controles input:focus-visible,
+.shell .contenido-ruta .controles select:focus-visible,
+.shell .contenido-ruta .buscador-tabla:focus-within,
+.shell .contenido-ruta .table-search:focus-within {
+  border-color: var(--filter-focus);
+  outline: 2px solid var(--filter-focus);
+  outline-offset: 2px;
+  box-shadow: none;
+}

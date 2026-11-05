@@ -1,0 +1,44 @@
+﻿<section class="inicio-header">
+  <div>
+    <h1>Hola, {{ authService.sesionActual()?.nombreCompleto?.split(' ')?.[0] }}.</h1>
+    <p>Revisa tus solicitudes y consulta el avance de cada ticket.</p>
+  </div>
+  <a routerLink="/mis-tickets" class="primary-action" aria-label="Ver mis solicitudes">
+    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7h16v4a2 2 0 0 0 0 4v2H4v-2a2 2 0 0 0 0-4V7z"/></svg>
+    Mis solicitudes
+  </a>
+</section>
+
+<div class="tarjetas">
+  <div class="card metrica">
+    <div class="icono-metrica rojo"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 8v4M12 16h.01"/></svg></div>
+    <div><span class="numero">{{ contarPorEstado('abierto') }}</span><span class="etiqueta">Recibidos</span></div>
+  </div>
+  <div class="card metrica">
+    <div class="icono-metrica naranja"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg></div>
+    <div><span class="numero">{{ contarPorEstado('en_progreso') }}</span><span class="etiqueta">En atención</span></div>
+  </div>
+  <div class="card metrica">
+    <div class="icono-metrica verde"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg></div>
+    <div><span class="numero">{{ contarPorEstado('resuelto') }}</span><span class="etiqueta">Finalizados</span></div>
+  </div>
+</div>
+
+<div class="card tabla-reciente">
+  <div class="cabecera-tabla">
+    <div><h3>Últimas solicitudes</h3><p>Seguimiento de tus tickets recientes.</p></div>
+    @if (recientes.length) { <a routerLink="/mis-tickets" class="enlace">Ver todos →</a> }
+  </div>
+
+  @for (t of recientes; track t.id) {
+    <div class="fila-ticket">
+      <div class="info-ticket"><a [routerLink]="['/tickets', t.id]" class="codigo">{{ t.codigoUnico }}</a><span [class]="claseEstado(t.estado)">{{ etiquetaEstado(t.estado) }}</span><p class="asunto">{{ t.asunto }}</p></div>
+      <div class="acciones-fila"><span [class]="claseBadge(t.prioridad)">{{ t.prioridad }}</span><a [routerLink]="['/tickets', t.id]" class="ver" aria-label="Ver ticket"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg></a></div>
+    </div>
+  } @empty {
+    <div class="empty-tickets">
+      <span class="empty-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 7h16v4a2 2 0 0 0 0 4v2H4v-2a2 2 0 0 0 0-4V7z"/></svg></span>
+      <div><h4>Sin solicitudes por ahora</h4><p>Cuando registres un ticket, aparecerá aquí.</p></div>
+    </div>
+  }
+</div>

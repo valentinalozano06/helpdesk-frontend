@@ -1,0 +1,123 @@
+<section class="dashboard" [attr.aria-busy]="cargando()">
+@if (cargando()) {
+    <div class="loading-state" role="status">
+      <span class="sr-only">Cargando resumen de tickets...</span>
+      <div class="metrics">@for (n of [1,2,3,4]; track n) { <div class="skeleton skeleton-metric"></div> }</div>
+      <div class="skeleton skeleton-panel"></div>
+      <div class="skeleton skeleton-panel"></div>
+    </div>
+  } @else if (error()) {
+    <div class="error-panel" role="alert">
+      <span class="error-symbol">!</span>
+      <h2>No pudimos cargar el resumen</h2>
+      <p>Intenta nuevamente para consultar tus tickets.</p>
+      <button class="primary-action" (click)="cargar()">Volver a intentar <span aria-hidden="true">↻</span></button>
+    </div>
+  } @else {
+    <div class="metrics">
+      @for (e of estados; track e.id; let i = $index) {
+        <article class="metric {{ e.tono }}" [style.animation-delay.ms]="i * 60">
+          <div class="metric-top">
+            <span>{{ e.nombre }}</span>
+            <span class="metric-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7">
+                @switch (e.icono) {
+                  @case ('circle') { <circle cx="12" cy="12" r="8"/><path d="M12 8v5m0 3h.01"/> }
+                  @case ('clock') { <circle cx="12" cy="12" r="8"/><path d="M12 7v5l3 2"/> }
+                  @case ('pause') { <path d="M9 6v12M15 6v12"/> }
+                  @case ('check') { <path d="m5 12 4 4L19 6"/> }
+                }
+              </svg>
+            </span>
+          </div>
+          <strong class="metric-value">{{ contarPorEstado(e.id) | number:'2.0-0' }}</strong>
+          <div class="metric-foot"><span class="status-dot"></span>{{ e.detalle }}</div>
+        </article>
+      }
+    </div>
+
+    <div class="insights">
+      <article class="panel activity-panel">
+        <header class="panel-heading">
+          <div>
+            <h2>Ritmo del equipo</h2>
+            <p>Tickets creados en los últimos 7 días</p>
+          </div>
+          <span class="period">7 días</span>
+        </header>
+        <div class="activity-body">
+          <div class="activity-chart">
+            <div class="chart-summary"><strong>{{ totalSemana() }}</strong><span>tickets esta semana</span></div>
+            <div class="bars" role="img" [attr.aria-label]="'Tickets creados en los últimos siete días: ' + totalSemana()">
+              @for (dia of actividad(); track dia.fecha) {
+                <div class="bar-column" [class.today]="dia.hoy" [attr.title]="dia.fecha + ': ' + dia.cantidad + ' tickets'">
+                  <span class="bar-number">{{ dia.cantidad }}</span>
+                  <div class="bar-track"><div class="bar" [style.height.%]="dia.altura" [class.zero]="dia.cantidad === 0"></div></div>
+                  <span class="bar-label">{{ dia.etiqueta }}</span>
+                </div>
+              }
+            </div>
+            @if (totalSemana() === 0) { <p class="quiet-note">Sin tickets nuevos en estos siete días.</p> }
+          </div>
+          <div class="distribution">
+            <h3>Estado general</h3>
+            <p class="distribution-total">{{ tickets().length }} tickets en total</p>
+            <div class="distribution-track" aria-hidden="true">@for (e of distribucion(); track e.id) { <span [class]="e.tono" [style.width.%]="e.porcentaje"></span> }</div>
+            @for (e of distribucion(); track e.id) { <div class="legend"><span><i [class]="e.tono"></i>{{ e.nombre }}</span><strong>{{ e.cantidad }}</strong></div> }
+          </div>
+        </div>
+      </article>
+
+      <article class="attention-panel">
+        <div class="attention-top"><span>Seguimiento</span><strong>{{ atencion().length }}</strong></div>
+        <h2>Necesitan atención</h2>
+        <p class="attention-description">{{ sinAsignar() }} sin asignar · {{ atencion().length }} pendientes de atención</p>
+        <div class="attention-list">
+          @for (t of atencion().slice(0, 3); track t.id) {
+            <a [routerLink]="['/tickets', t.id]" class="attention-ticket">
+              <span class="attention-indicator" [class.critical]="t.prioridad === 'critica'"></span>
+              <span class="attention-copy"><strong>{{ t.asunto }}</strong><small>{{ t.codigoUnico }} · {{ !t.asignadoA?.trim() ? 'Sin asignar' : 'Prioridad ' + t.prioridad }}</small></span>
+              <span aria-hidden="true">↗</span>
+            </a>
+          } @empty {
+            <div class="attention-empty"><span aria-hidden="true">✓</span><strong>Todo bajo control</strong><p>No hay tickets urgentes ni sin asignar.</p></div>
+          }
+        </div>
+        <a class="attention-link" routerLink="/admin/tickets">Ir a gestión de tickets <span aria-hidden="true">→</span></a>
+      </article>
+    </div>
+
+    <section class="panel recent-panel">
+      <header class="panel-heading">
+        <div><h2>Tickets recientes <span class="count-chip">{{ tickets().length }}</span></h2></div>
+        <div class="table-tools">
+          <label class="table-search">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="10" cy="10" r="6"/><path d="m15 15 5 5"/></svg>
+            <input type="search" placeholder="Buscar ticket..." aria-label="Buscar entre los tickets" [value]="busqueda()" (input)="busqueda.set($any($event.target).value)" />
+          </label>
+          <a routerLink="/admin/tickets" class="view-all">Ver todos <span aria-hidden="true">↗</span></a>
+        </div>
+      </header>
+      <div class="table-scroll">
+        <table>
+          <thead><tr><th>Ticket</th><th>Solicitante</th><th>Prioridad</th><th>Estado</th><th>Técnico</th><th><span class="sr-only">Acciones</span></th></tr></thead>
+          <tbody>
+            @for (t of recientes(); track t.id) {
+              <tr>
+                <td><a class="ticket-title" [routerLink]="['/tickets', t.id]">{{ t.asunto }}</a><span class="ticket-code">{{ t.codigoUnico }}</span></td>
+                <td><span class="person"><span class="person-avatar" aria-hidden="true">{{ iniciales(t.solicitante) }}</span><span>{{ t.solicitante }}</span></span></td>
+                <td><span [class]="'priority priority-' + t.prioridad"><i></i>{{ t.prioridad }}</span></td>
+                <td><span [class]="'state state-' + t.estado">{{ etiquetaEstado(t.estado) }}</span></td>
+                <td><span class="technician" [class.unassigned]="!t.asignadoA?.trim()">{{ t.asignadoA?.trim() || 'Sin asignar' }}</span></td>
+                <td><a class="row-action" [routerLink]="['/tickets', t.id]" [attr.aria-label]="'Gestionar ' + t.codigoUnico"><span aria-hidden="true">↗</span></a></td>
+              </tr>
+            } @empty {
+              <tr><td colspan="6" class="empty-table">{{ busqueda() ? 'No encontramos tickets con esa búsqueda.' : 'Aún no hay tickets. Aparecerán aquí cuando se registren.' }}</td></tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      <footer class="table-footer"><span>Mostrando {{ recientes().length }} de {{ tickets().length }} tickets</span><span>Actualizado {{ actualizado() | date:'HH:mm' }} <button (click)="cargar()" aria-label="Actualizar resumen" title="Actualizar resumen">↻</button></span></footer>
+    </section>
+  }
+</section>

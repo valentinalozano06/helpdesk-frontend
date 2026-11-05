@@ -1,0 +1,94 @@
+<section class="card panel-exportacion" aria-label="Opciones del reporte" [attr.aria-busy]="cargando() || !!exportando()">
+  <div class="controles">
+    <label>Desde<input type="date" [(ngModel)]="desde" (ngModelChange)="cambiarFechas()" [max]="hasta" [disabled]="!!exportando()" name="desde" /></label>
+    <label>Hasta<input type="date" [(ngModel)]="hasta" (ngModelChange)="cambiarFechas()" [min]="desde" [disabled]="!!exportando()" name="hasta" /></label>
+    <button class="btn-actualizar" type="button" (click)="generar()" [disabled]="cargando() || !!exportando() || !rangoCorrecto()">{{ cargando() ? 'Actualizando…' : 'Actualizar' }}</button>
+    <div class="exportaciones">
+      <button class="btn-exportar" type="button" (click)="exportar('pdf')" [disabled]="!total() || !rangoCorrecto() || cargando() || !!error() || !!exportando()">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zM14 2v6h6M12 11v7m-3-3 3 3 3-3"/></svg>
+        {{ exportando() === 'pdf' ? 'Preparando PDF…' : 'Exportar PDF' }}
+      </button>
+      <button class="btn-exportar excel" type="button" (click)="exportar('xlsx')" [disabled]="!total() || !rangoCorrecto() || cargando() || !!error() || !!exportando()">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M3 9h18M3 15h18M9 9v12M15 9v12"/></svg>
+        {{ exportando() === 'xlsx' ? 'Preparando Excel…' : 'Exportar Excel' }}
+      </button>
+    </div>
+  </div>
+  <div class="periodos"><button type="button" (click)="periodoRapido('mes')" [disabled]="!!exportando()">Este mes</button><button type="button" (click)="periodoRapido('30dias')" [disabled]="!!exportando()">Últimos 30 días</button><button type="button" (click)="periodoRapido('anio')" [disabled]="!!exportando()">Este año</button><span class="meta">Por fecha de creación · Estados actuales</span></div>
+</section>
+@if (!rangoCorrecto()) { <p class="aviso error" role="alert">Selecciona fechas válidas. La fecha inicial debe ser anterior o igual a la final.</p> }
+@if (error()) { <p class="aviso error" role="alert">{{ error() }}</p> }
+@if (cargando()) { <p class="aviso" role="status">Cargando datos del reporte…</p> }
+@if (!cargando() && !error() && rangoCorrecto() && !total()) { <p class="aviso" role="status">No hay tickets en este periodo. Prueba con otro rango de fechas.</p> }
+@if (!cargando() && !error() && rangoCorrecto() && total()) {<div class="tarjetas">
+  <div class="card metrica">
+    <div class="icono-metrica marino"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7h18v3a2 2 0 0 0 0 4v3H3v-3a2 2 0 0 0 0-4V7z"/></svg></div>
+    <div><span class="numero">{{ total() }}</span><span class="etiqueta">Total tickets</span></div>
+  </div>
+  <div class="card metrica">
+    <div class="icono-metrica verde"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg></div>
+    <div><span class="numero">{{ tasaResolucion() }}%</span><span class="etiqueta">Tasa de resolución</span></div>
+  </div>
+  <div class="card metrica">
+    <div class="icono-metrica naranja"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg></div>
+    <div><span class="numero">{{ reporte().pendientes }}</span><span class="etiqueta">Pendientes</span></div>
+  </div>
+  <div class="card metrica">
+    <div class="icono-metrica rojo"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 8v4M12 16h.01"/></svg></div>
+    <div><span class="numero">{{ ticketsCriticos() }}</span><span class="etiqueta">Tickets críticos</span></div>
+  </div>
+</div>
+
+<div class="fila-graficos">
+  <div class="card grafico">
+    <h3>Tickets por categoría</h3>
+    <div class="barras-verticales">
+      @for (b of porCategoria(); track b.etiqueta) {
+        <div class="columna">
+          <div class="barra-v" [style.height.%]="(b.valor / maxCategoria()) * 100" [style.background]="b.color"></div>
+          <span class="etiqueta-barra">{{ b.etiqueta }}</span>
+        </div>
+      }
+    </div>
+  </div>
+
+  <div class="card grafico">
+    <h3>Distribución por estado</h3>
+    <div class="donut-contenedor">
+      <svg viewBox="0 0 160 160" width="160" height="160">
+        <circle cx="80" cy="80" r="60" fill="none" stroke="#eef1f4" stroke-width="20"/>
+        @for (s of segmentosDonut(); track s.estado) {
+          <circle cx="80" cy="80" r="60" fill="none" [attr.stroke]="s.color" stroke-width="20"
+                  [attr.stroke-dasharray]="s.dasharray" [attr.stroke-dashoffset]="s.offset"
+                  transform="rotate(-90 80 80)"/>
+        }
+      </svg>
+      <div class="leyenda">
+        @for (s of distribucionEstado(); track s.estado) {
+          <span class="item-leyenda"><i [style.background]="s.color"></i>{{ s.etiqueta }} ({{ s.valor }})</span>
+        }
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card grafico">
+  <h3>Tickets por prioridad</h3>
+  <div class="barras-horizontales">
+    @for (b of porPrioridad(); track b.etiqueta) {
+      <div class="fila-barra">
+        <span class="etiqueta-h">{{ b.etiqueta }}</span>
+        <div class="pista"><div class="relleno" [style.width.%]="(b.valor / maxPrioridad()) * 100" [style.background]="b.color"></div></div>
+        <span class="valor-h">{{ b.valor }}</span>
+      </div>
+    }
+  </div>
+</div>
+
+<div class="card equipo">
+  <h3>Carga actual del equipo</h3>
+  <div class="tabla-scroll"><table><thead><tr><th>Técnico</th><th>Asignados</th><th>Resueltos / cerrados</th><th>Pendientes</th></tr></thead><tbody>
+    @for (t of reporte().tecnicos; track t.nombre) { <tr><td>{{ t.nombre }}</td><td>{{ t.total }}</td><td>{{ t.resueltos }}</td><td>{{ t.pendientes }}</td></tr> }
+  </tbody></table></div>
+</div>
+}

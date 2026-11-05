@@ -1,0 +1,51 @@
+@if (config.avisoAlmacenamiento()) { <p class="alerta" role="status">{{ config.avisoAlmacenamiento() }}</p> }
+@if (conflicto) { <p class="alerta" role="status">Hay ajustes nuevos en otra pestaña. <button type="button" (click)="recargar()">Cargar ajustes guardados</button></p> }
+<div class="card contenedor-config">
+  <nav class="pestanas" aria-label="Secciones de configuración">@for (tab of tabs; track tab.id) { <button type="button" [class.activa]="pestana() === tab.id" [attr.aria-pressed]="pestana() === tab.id" (click)="pestana.set(tab.id)">{{ tab.texto }}</button> }</nav>
+  <form (ngSubmit)="guardar()">
+    <div class="config-status"><span class="estado">{{ cambios ? 'Cambios sin guardar' : 'Todo guardado' }}</span></div>
+    <fieldset [disabled]="procesando()" class="panel">
+    @switch (pestana()) {
+      @case ('general') {
+        <h2>Tu institución</h2><p class="ayuda">Identidad del login, sidebar y reportes.</p>
+        <div class="fila-doble">
+          <label>Nombre del sistema<input name="nombre" [(ngModel)]="form.nombre" maxlength="24" required /></label>
+          <label>Nombre corto de institución<input name="nombreCorto" [(ngModel)]="form.nombreCorto" maxlength="28" required /></label>
+          <label class="ancho">Institución<input name="institucion" [(ngModel)]="form.institucion" maxlength="90" required /></label>
+          <label>Correo de soporte<input name="soporte" type="email" [(ngModel)]="form.soporte" placeholder="soporte@institucion.gob.pe" maxlength="120" /><small>Contacto en «¿Olvidaste tu contraseña?».</small></label>
+          <label>Formato de fecha<select name="formato" [(ngModel)]="form.formatoFecha"><option value="dd/MM/yyyy">Día / mes / año</option><option value="MM/dd/yyyy">Mes / día / año</option><option value="yyyy-MM-dd">Año - mes - día</option></select><small>Listados de tickets y reportes exportados.</small></label>
+        </div>
+        <div class="logo-editor"><div class="logo-preview"><img [src]="form.logo || 'assets/helpdesk-isotipo.svg'" alt="Vista previa del logo" /><span>{{ form.nombre }}<small>{{ form.nombreCorto }}</small></span></div><div><label class="btn-secondary archivo">Cambiar logo<input type="file" accept="image/png,image/jpeg,image/webp" (change)="cargarLogo($event)" /></label><button type="button" class="texto-btn" (click)="form.logo = ''" [disabled]="!form.logo">Usar isotipo original</button><p class="ayuda">PNG, JPG o WebP · hasta 500 KB y 2048 × 2048 px.</p></div></div>
+      }
+      @case ('sla') {
+        <app-ajuste-reparto />
+        <h2>Plazos de tickets</h2><p class="ayuda">SLA visual: horas continuas desde la creación, sin pausar por estado de espera. No cambia estados automáticamente.</p>
+        <label class="interruptor"><input type="checkbox" name="slaActivo" [(ngModel)]="form.slaActivo" /><span>Mostrar plazo y vencimiento en Tickets</span></label>
+        <div class="fila-doble">@for (p of prioridades; track p) { <label>{{ p === 'critica' ? 'Crítica' : (p | titlecase) }} · horas<input type="number" [name]="p" [(ngModel)]="form.slaHoras[p]" min="1" max="720" required /></label> }</div>
+        <label class="campo-limitado">Descripción mínima al crear ticket<input type="number" name="descripcionMinima" [(ngModel)]="form.descripcionMinima" min="1" max="200" required /><small>Entre 1 y 200 caracteres. Se valida antes de enviar.</small></label>
+      }
+      @case ('avisos') {
+        <h2>Avisos en la aplicación</h2><p class="ayuda">Confirmaciones de acciones realizadas desde este navegador; no envían correos.</p>
+        <label class="interruptor"><input type="checkbox" name="avisarCreacion" [(ngModel)]="form.avisarCreacion" /><span>Avisar al crear un ticket</span></label>
+        <label class="interruptor"><input type="checkbox" name="avisarCambios" [(ngModel)]="form.avisarCambios" /><span>Avisar al cambiar estado, prioridad o técnico</span></label>
+        <label class="campo-limitado">Duración del aviso (segundos)<input type="number" name="duracion" [(ngModel)]="form.duracionAviso" min="2" max="10" required /></label>
+        <button type="button" class="btn-secondary" (click)="probarAviso()">Probar aviso</button>
+      }
+      @case ('seguridad') {
+        <h2>Sesión en este dispositivo</h2><p class="ayuda">Controles locales. Los permisos y la autenticación siguen gestionados por el servidor.</p>
+        <label class="campo-limitado">Cerrar sesión por inactividad<select name="inactividad" [(ngModel)]="form.inactividad"><option [ngValue]="0">Desactivado</option><option [ngValue]="5">5 minutos</option><option [ngValue]="15">15 minutos</option><option [ngValue]="30">30 minutos</option><option [ngValue]="60">1 hora</option><option [ngValue]="120">2 horas</option></select></label>
+        <label class="interruptor"><input type="checkbox" name="confirmarSalida" [(ngModel)]="form.confirmarSalida" /><span>Pedir confirmación al cerrar sesión</span></label>
+      }
+      @case ('apariencia') {
+        <h2>A tu estilo</h2><p class="ayuda">Elige el acento del login, navegación y botones principales.</p>
+        <div class="colores">@for (a of acentos; track a.id) { <label class="color-opcion" [class.elegida]="form.acento === a.id"><input type="radio" name="acento" [value]="a.id" [(ngModel)]="form.acento" /><i [style.background]="a.color"></i>{{ a.nombre }}</label> }</div>
+        <label class="interruptor"><input type="checkbox" name="animaciones" [(ngModel)]="form.animaciones" /><span>Activar animaciones</span></label>
+        <label class="interruptor"><input type="checkbox" name="compacto" [(ngModel)]="form.compacto" /><span>Tablas compactas</span></label>
+        <label class="interruptor"><input type="checkbox" name="sidebar" [(ngModel)]="form.sidebarColapsado" /><span>Iniciar con el sidebar contraído</span></label>
+      }
+    }
+    </fieldset>
+    @if (error()) { <p class="error-text error-config" role="alert">{{ error() }}</p> }
+    <footer class="acciones"><div class="respaldo"><button type="button" class="btn-secondary" (click)="exportar()" [disabled]="procesando()" title="Exportar los ajustes guardados">Exportar</button><label class="btn-secondary archivo">Importar<input type="file" accept=".json,application/json" (change)="importar($event)" [disabled]="procesando()" /></label></div><button type="button" class="texto-btn" (click)="restaurar()" [disabled]="procesando()">Restaurar</button><button type="button" class="btn-secondary" (click)="recargar()" [disabled]="!cambios || procesando()">Descartar</button><button type="submit" class="btn-primary" [disabled]="!cambios || procesando()">{{ procesando() ? 'Procesando…' : 'Guardar cambios' }}</button></footer>
+  </form>
+</div>

@@ -1,0 +1,23 @@
+.inicio-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 18px; max-width: none; margin: 0 auto 18px; }
+.inicio-header h1 { margin: 0 0 6px; color: #173346; font-size: clamp(28px, 2.2vw, 34px); line-height: 1.06; letter-spacing: -1px; }
+.inicio-header p { margin: 0; color: #627567; font-size: 15px; }
+.primary-action { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; padding: 0 16px; border-radius: 13px; background: #173346; color: #fff; text-decoration: none; font-weight: 850; font-size: 15px; box-shadow: 0 12px 26px rgba(23,51,70,.15); white-space: nowrap; }
+.primary-action:hover { background: #102a3c; }
+.tarjetas { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; max-width: none; margin: 0 auto 18px; }
+.card { background: #fffffb; border: 1px solid #e4eadf; border-radius: 18px; box-shadow: 0 10px 30px rgba(18,45,62,.05); }
+.metrica { display: flex; align-items: center; gap: 14px; min-height: 82px; padding: 18px 20px; }
+.icono-metrica { width: 42px; height: 42px; border-radius: 13px; display: flex; align-items: center; justify-content: center; color: #fff; flex-shrink: 0; }
+.icono-metrica.rojo { background: #d95757; }.icono-metrica.naranja { background: #ed9232; }.icono-metrica.verde { background: #55a96b; }
+.numero { display: block; color: #173346; font-size: 28px; font-weight: 850; line-height: 1; }.etiqueta { display: block; margin-top: 7px; color: #627567; font-size: 14px; }
+.tabla-reciente { max-width: none; margin: 0 auto; padding: 0; overflow: hidden; }
+.cabecera-tabla { display: flex; justify-content: space-between; align-items: center; gap: 16px; padding: 18px 22px; border-bottom: 1px solid #eef2ea; }
+.cabecera-tabla h3 { margin: 0; color: #173346; font-size: 19px; }.cabecera-tabla p { margin: 5px 0 0; color: #6b7c8c; font-size: 14px; }
+.enlace { color: #4d6d18; font-size: 14px; font-weight: 850; text-decoration: none; white-space: nowrap; }
+.fila-ticket { display: flex; justify-content: space-between; align-items: center; padding: 16px 22px; border-bottom: 1px solid #eef2ea; }.fila-ticket:last-child { border-bottom: none; }.fila-ticket:hover { background: #fbfdf7; }
+.info-ticket { display: flex; flex-direction: column; gap: 5px; }.codigo { color: #386fc6; font-weight: 750; font-size: 14px; text-decoration: none; }.asunto { margin: 0; color: #173346; font-size: 15px; font-weight: 850; }
+.acciones-fila { display: flex; align-items: center; gap: 14px; }.ver { color: #6b7c8c; }
+.empty-tickets { display: flex; align-items: center; gap: 14px; min-height: 86px; padding: 18px 22px; background: #fbfdf7; text-align: left; }
+.empty-icon { width: 42px; height: 42px; display: grid; place-items: center; border-radius: 14px; background: #eef8d7; color: #173346; flex-shrink: 0; }
+.empty-tickets h4 { margin: 0; color: #173346; font-size: 17px; }.empty-tickets p { margin: 4px 0 0; color: #627567; font-size: 14px; }
+@media (max-width: 920px) { .inicio-header { align-items: stretch; flex-direction: column; } .primary-action { width: 100%; } .tarjetas { grid-template-columns: 1fr; } }
+@media (max-width: 560px) { .cabecera-tabla { align-items: flex-start; flex-direction: column; } .fila-ticket { align-items: flex-start; flex-direction: column; gap: 12px; } .acciones-fila { width: 100%; justify-content: space-between; } .empty-tickets { align-items: flex-start; padding: 16px; } }
