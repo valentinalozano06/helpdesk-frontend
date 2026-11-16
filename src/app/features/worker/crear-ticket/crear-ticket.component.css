@@ -8,6 +8,14 @@
 .requerido { color: #d6362f; }.ayuda { color: #78906c; font-size: 13px; font-weight: 600; }
 .zona-adjunto { display: flex; flex-direction: column; align-items: center; gap: 7px; border: 1.5px dashed #d8e0dc; border-radius: 16px; padding: 28px; text-align: center; color: #4a5a68; font-size: 14px; cursor: pointer; background: #fbfdf7; }
 .zona-adjunto:hover { border-color: #bddf5e; background: #f6faed; }
+.lista-archivos { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.lista-archivos li { display: flex; align-items: center; gap: 10px; border: 1px solid #e0e6da; border-radius: 13px; background: #fff; padding: 10px 12px; }
+.archivo-icono { flex: none; display: grid; place-items: center; min-width: 44px; height: 34px; border-radius: 9px; background: #eef4e6; color: #3f5a2c; font-size: 11px; font-weight: 850; letter-spacing: .4px; }
+.archivo-datos { flex: 1; display: grid; gap: 1px; min-width: 0; }
+.archivo-datos strong { color: #173346; font-size: 13.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.archivo-datos small { color: #78906c; font-size: 12px; font-weight: 650; }
+.quitar { flex: none; width: 32px; height: 32px; border: 1px solid #ead9d6; border-radius: 10px; background: #fff6f3; color: #9b3434; font-size: 14px; cursor: pointer; }
+.quitar:hover { background: #f3e3df; }
 .error-text { margin: 0 0 16px; padding: 12px 14px; border: 1px solid #f0d4cd; border-radius: 13px; background: #fff6f3; color: #9b3434; font-weight: 750; }
 .acciones { display: flex; justify-content: flex-end; gap: 10px; margin-top: 8px; }
 .btn-secondary, .btn-primary { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; border-radius: 13px; padding: 0 17px; font: inherit; font-weight: 850; text-decoration: none; cursor: pointer; }

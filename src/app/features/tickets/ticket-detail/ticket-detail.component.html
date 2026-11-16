@@ -4,52 +4,96 @@
   <section class="panel estado-carga"><h1>No pudimos abrir el ticket</h1><p role="alert">{{ mensajeError() }}</p>@if (idValido()) { <button class="boton-secundario" type="button" (click)="cargar()">Reintentar</button> }</section>
 } @else { @if (ticket(); as t) {
   <header class="ticket-hero">
-    <div class="hero-linea"><span class="codigo">{{ t.codigoUnico }}</span><span class="estado-pill" [attr.data-estado]="t.estado"><i aria-hidden="true"></i>{{ etiquetaEstado(t.estado) }}</span></div>
+    <div class="hero-linea"><span class="codigo">Solicitud · {{ t.codigoUnico }}</span><span class="estado-pill" [attr.data-estado]="t.estado"><i aria-hidden="true"></i>{{ etiquetaEstado(t.estado) }}</span></div>
     <h1>{{ t.asunto }}</h1>
-    <div class="hero-meta"><span class="prioridad-pill" [attr.data-prioridad]="t.prioridad"><i aria-hidden="true"></i>Prioridad {{ etiquetaPrioridad(t.prioridad) | lowercase }}</span><span class="categoria">{{ t.categoria }}</span><span class="creacion">Creado el {{ config.fecha(t.fechaCreacion) }} · {{ hora(t.fechaCreacion) }}</span></div>
+    <p class="estado-explicacion">
+      @switch (t.estado) {
+        @case ('abierto') { Solicitud recibida. Pendiente de iniciar la atención. }
+        @case ('en_progreso') { El equipo de TI está atendiendo esta solicitud. }
+        @case ('en_espera') { La atención está en espera. Revisa los comentarios para conocer los detalles. }
+        @case ('resuelto') { El ticket fue marcado como resuelto. Puedes revisar la solución en los comentarios. }
+        @case ('cerrado') { La atención de este ticket ha finalizado. }
+      }
+    </p>
+    <dl class="resumen-ticket">
+      <div><dt>Categoría</dt><dd>{{ t.categoria }}</dd></div>
+      <div><dt>Prioridad</dt><dd><span class="prioridad-pill" [attr.data-prioridad]="t.prioridad"><i aria-hidden="true"></i>{{ etiquetaPrioridad(t.prioridad) }}</span></dd></div>
+      <div><dt>Fecha de solicitud</dt><dd>{{ config.fecha(t.fechaCreacion) }} <span>· {{ hora(t.fechaCreacion) }}</span></dd></div>
+    </dl>
   </header>
   <div class="detalle-grid">
     <main class="contenido-ticket">
       <section class="panel descripcion"><header class="panel-titulo"><span class="icono-seccion" aria-hidden="true"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8 3h8l4 4v14H4V3h4ZM8 11h8M8 15h6"/></svg></span><h2>Descripción del problema</h2></header><p class="texto-descripcion">{{ t.descripcion || 'Sin descripción.' }}</p></section>
+      <section class="panel evidencia" aria-labelledby="evidencia-titulo" [attr.aria-busy]="cargandoAdjuntos()">
+        <header class="panel-titulo"><span class="icono-seccion" aria-hidden="true"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 3v5h5M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8l-5-5Z"/><path d="M9 13h6M9 17h4"/></svg></span><h2 id="evidencia-titulo">Evidencia adjunta</h2><span class="contador">{{ adjuntos().length }}</span></header>
+        @if (cargandoAdjuntos()) { <p class="mensaje-suave" role="status">Cargando evidencia…</p> }
+        @else if (errorAdjuntos()) { <div class="error-bloque" role="alert"><p>{{ errorAdjuntos() }}</p><button type="button" class="boton-secundario" (click)="cargarAdjuntos()">Reintentar</button></div> }
+        @else {
+          @if (adjuntos().length) {
+            <ul class="lista-evidencia">
+              @for (a of adjuntos(); track a.id) {
+                <li>
+                  <button type="button" class="miniatura-boton" (click)="verAdjunto(a)" [attr.aria-label]="'Ampliar ' + a.nombreArchivo" [attr.aria-expanded]="vistaPrevia()?.id === a.id" aria-controls="visor-foto">
+                    @if (miniaturas()[a.id]; as mini) {
+                      <img class="evidencia-miniatura" [src]="mini" [alt]="'Miniatura de ' + a.nombreArchivo" loading="lazy" />
+                    } @else {
+                      <span class="evidencia-icono" [class.pdf]="tipoEvidencia(a) === 'pdf'" aria-hidden="true">
+                        @if (tipoEvidencia(a) === 'pdf') { PDF } @else { <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="8.5" cy="10" r="1.5"/><path d="m21 15-5-5L5 19"/></svg> }
+                      </span>
+                    }
+                  </button>
+                  <span class="evidencia-datos"><strong>{{ a.nombreArchivo }}</strong><small>{{ tamanoLegible(a.tamano) }} · {{ config.fecha(a.fechaCreacion) }}</small><small>Adjuntado por {{ a.usuario }}</small></span>
+                  <div class="acciones-evidencia">
+                    <button type="button" class="boton-secundario ver-adjunto" (click)="verAdjunto(a)" [attr.aria-label]="'Vista previa de ' + a.nombreArchivo" [attr.aria-expanded]="vistaPrevia()?.id === a.id" aria-controls="visor-foto">Ver<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg></button>
+                    @if (puedeAdjuntar) {
+                    <button type="button" class="boton-eliminar" [disabled]="enviandoEvidencia()" (click)="eliminarAdjunto(a)" [attr.aria-label]="'Eliminar ' + a.nombreArchivo" title="Eliminar evidencia">
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 6h18M9 6V3h6v3M5 6l1 15h12l1-15M10 10v7M14 10v7"/></svg>
+                    </button>
+                    }
+                  </div>
+                </li>
+              }
+            </ul>
+          }
+        }
+        @if (puedeAdjuntar) {
+          <div class="zona-adjunto-mini" [attr.aria-busy]="enviandoEvidencia()">
+            <input #selectorEvidencia type="file" accept=".png,.jpg,.jpeg" multiple [disabled]="enviandoEvidencia()" (change)="seleccionarEvidencia($event)" hidden />
+            <button type="button" class="boton-secundario" [disabled]="enviandoEvidencia() || adjuntos().length >= 10" (click)="selectorEvidencia.click()"><span aria-hidden="true">＋</span>{{ enviandoEvidencia() ? 'Subiendo…' : 'Adjuntar foto' }}</button>
+          </div>
+          @if (errorEvidencia()) { <p class="mensaje-error" role="alert">{{ errorEvidencia() }}</p> }
+          @if (exitoEvidencia()) { <p class="mensaje-exito" role="status">{{ exitoEvidencia() }}</p> }
+        }
+      </section>
       <section class="panel conversacion" aria-labelledby="conversacion-titulo">
         <header class="panel-titulo"><span class="icono-seccion" aria-hidden="true"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 14a3 3 0 0 1-3 3H9l-6 4V6a3 3 0 0 1 3-3h12a3 3 0 0 1 3 3v8Z"/><path d="M7 8h10M7 12h7"/></svg></span><h2 id="conversacion-titulo">Seguimiento</h2><span class="contador">{{ comentarios().length }}</span></header>
         @if (cargandoComentarios()) { <p class="mensaje-suave" role="status">Cargando conversación…</p> }
         @else if (errorComentarios()) { <div class="error-bloque" role="alert"><p>{{ errorComentarios() }}</p><button type="button" class="boton-secundario" (click)="cargarComentarios()">Reintentar</button></div> }
         @else {
-          <ol class="timeline">
+          <ol class="chat-mensajes" aria-label="Conversación del ticket">
             @for (c of ordenados(); track c.id) {
-              <li class="comentario"><div class="avatar-comentario" aria-hidden="true">{{ iniciales(c.autor) }}</div><article><header class="comentario-cabecera"><strong>{{ c.autor }}</strong><time [attr.datetime]="c.fechaCreacion">{{ config.fecha(c.fechaCreacion) }} · {{ hora(c.fechaCreacion) }}</time></header><p>{{ c.contenido }}</p></article></li>
+              <li class="chat-mensaje" [class.propio]="esMensajePropio(c)">
+                <span class="chat-avatar" aria-hidden="true">{{ iniciales(c.autor) }}</span>
+                <article class="chat-burbuja">
+                  <strong class="chat-autor">{{ esMensajePropio(c) ? 'Tú' : c.autor }}@if (c.rol) { <span class="chat-rol" [attr.data-rol]="c.rol">{{ etiquetaRol(c.rol) }}</span> }</strong>
+                  <p>{{ c.contenido }}</p>
+                  <time [attr.datetime]="c.fechaCreacion">{{ config.fecha(c.fechaCreacion) }} · {{ hora(c.fechaCreacion) }}</time>
+                </article>
+              </li>
             } @empty { <li class="sin-comentarios"><strong>Aún no hay comentarios</strong><p>Comparte una actualización para empezar el seguimiento.</p></li> }
           </ol>
         }
         <form [formGroup]="formularioComentario" (ngSubmit)="enviarComentario()" class="form-comentario" [attr.aria-busy]="enviandoComentario()">
-          <label for="comentario">Añadir comentario</label>
+          <label for="comentario">Escribir una actualización</label>
           <textarea id="comentario" rows="4" formControlName="contenido" [maxLength]="maxComentario" [readOnly]="enviandoComentario()" placeholder="Describe una solución, avance o consulta…" aria-describedby="comentario-ayuda" (input)="exitoEnvio.set(''); errorEnvio.set('')"></textarea>
           <div class="editor-footer"><span id="comentario-ayuda">{{ contenido.length }} / {{ maxComentario }}</span><button class="boton-principal" type="submit" [disabled]="!puedeEnviar">{{ enviandoComentario() ? 'Enviando…' : 'Enviar comentario' }}<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m22 2-7 20-4-9L2 9l20-7ZM11 13 22 2"/></svg></button></div>
           @if (errorEnvio()) { <p class="mensaje-error" role="alert">{{ errorEnvio() }}</p> }
           @if (exitoEnvio()) { <p class="mensaje-exito" role="status">{{ exitoEnvio() }}</p> }
         </form>
       </section>
-      <section class="historial" aria-labelledby="historial-titulo" [attr.aria-busy]="cargandoHistorial()">
-        <header class="panel-titulo"><h2 id="historial-titulo">Historial de cambios</h2></header>
-        @if (cargandoHistorial()) { <p class="mensaje-suave" role="status">Cargando historial...</p> }
-        @else if (errorHistorial()) {
-          <div class="error-bloque" role="alert"><p>{{ errorHistorial() }}</p><button type="button" class="boton-secundario" (click)="cargarHistorial()">Reintentar</button></div>
-        } @else {
-          <ol class="historial-lista">
-            @for (cambio of historial(); track cambio.id) {
-              <li>
-                <div class="historial-cabecera"><strong>{{ etiquetaCampo(cambio.campoModificado) }}</strong><time [attr.datetime]="cambio.fechaCambio">{{ config.fecha(cambio.fechaCambio) }} · {{ hora(cambio.fechaCambio) }}</time></div>
-                <p class="historial-valores"><span><small>Anterior</small>{{ valorHistorial(cambio.campoModificado, cambio.valorAnterior) }}</span><span><small>Nuevo</small>{{ valorHistorial(cambio.campoModificado, cambio.valorNuevo) }}</span></p>
-                <p class="historial-autor">Registrado por {{ cambio.usuario }}</p>
-              </li>
-            } @empty { <li class="mensaje-suave">Aún no hay cambios registrados.</li> }
-          </ol>
-        }
-      </section>
     </main>
     <aside class="lateral-ticket" aria-label="Datos y gestión del ticket">
-      <section class="panel ficha"><h2>Información del ticket</h2><dl>
+      <section class="panel ficha"><h2>Personas y atención</h2><p class="ficha-ayuda">Quién solicita y quién atiende este caso.</p><dl>
         <div><dt>Solicitante</dt><dd class="persona"><span class="avatar-mini" aria-hidden="true">{{ iniciales(t.solicitante) }}</span>{{ t.solicitante }}</dd></div>
         <div><dt>Técnico asignado</dt><dd class="persona" [class.sin-asignar]="!t.asignadoA"><span class="avatar-mini tecnico" aria-hidden="true">{{ t.asignadoA ? iniciales(t.asignadoA) : '—' }}</span>{{ t.asignadoA || 'Sin asignar' }}</dd></div>
         <div><dt>Última actualización</dt><dd>{{ config.fecha(t.fechaUltimaActualizacion || t.fechaCreacion) }} · {{ hora(t.fechaUltimaActualizacion || t.fechaCreacion) }}</dd></div>
@@ -71,7 +115,34 @@
           @if (exitoGestion() && !gestionModificada) { <p class="mensaje-exito" role="status">{{ exitoGestion() }}</p> }
         </section>
       }
+      @if (puedeEliminar) {
+        <section class="panel zona-peligro" aria-labelledby="eliminar-titulo">
+          <h2 id="eliminar-titulo">Eliminar ticket</h2>
+          <p>Esta acción es permanente. Se borrarán el ticket, sus comentarios, historial, fotos y notificaciones.</p>
+          <button type="button" class="boton-peligro" [disabled]="eliminandoTicket()" (click)="eliminarTicket()">
+            <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M9 6V3h6v3M5 6l1 15h12l1-15M10 10v7M14 10v7"/></svg>
+            {{ eliminandoTicket() ? 'Eliminando…' : 'Eliminar ticket' }}
+          </button>
+        </section>
+      }
     </aside>
   </div>
+
+  @if (vistaPrevia(); as vista) {
+    <div class="visor-modal" (click)="cerrarVistaPrevia()">
+      <section id="visor-foto" class="visor-dialogo" role="dialog" aria-modal="true" aria-labelledby="visor-titulo" [attr.aria-busy]="cargandoVista()" (click)="$event.stopPropagation()">
+        <header class="visor-cabecera">
+          <h3 id="visor-titulo">{{ vista.nombreArchivo }}</h3>
+          <button type="button" class="cerrar-visor" (click)="cerrarVistaPrevia()" aria-label="Cerrar vista previa">×</button>
+        </header>
+        <div class="visor-contenido">
+          @if (cargandoVista()) { <p class="mensaje-suave visor-mensaje" role="status">Cargando foto…</p> }
+          @else if (errorVista()) { <div class="visor-mensaje"><p class="mensaje-error" role="alert">{{ errorVista() }}</p><button type="button" class="boton-secundario" (click)="verAdjunto(vista)">Reintentar</button></div> }
+          @else if (urlPdf()) { <iframe class="visor-pdf" [src]="urlPdf()" [title]="'Vista previa de ' + vista.nombreArchivo"></iframe> }
+          @else if (urlImagen()) { <img class="visor-foto" [src]="urlImagen()" [alt]="vista.nombreArchivo" (error)="errorVista.set('No se pudo visualizar esta foto.')" /> }
+        </div>
+      </section>
+    </div>
+  }
 }
 }

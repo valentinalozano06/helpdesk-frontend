@@ -19,6 +19,10 @@ export class UsuarioService {
     return this.http.get<{ id: number; nombre: string }[]>(`${this.base}/tecnicos`);
   }
 
+  perfil(): Observable<UsuarioAdmin> {
+    return this.http.get<UsuarioAdmin>(`${this.base}/me`);
+  }
+
   crear(usuario: NuevoUsuario): Observable<UsuarioAdmin> {
     return this.http.post<UsuarioAdmin>(this.base, this.normalizarPayload(usuario));
   }

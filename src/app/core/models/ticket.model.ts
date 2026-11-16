@@ -35,8 +35,19 @@ export interface HistorialCambio {
 }
 
 export interface Comentario {
+  autorId: number;
+  rol: string;
   id: number;
   contenido: string;
   autor: string;
+  fechaCreacion: string;
+}
+
+export interface Adjunto {
+  id: number;
+  nombreArchivo: string;
+  tipoMime: string;
+  tamano: number;
+  usuario: string;
   fechaCreacion: string;
 }

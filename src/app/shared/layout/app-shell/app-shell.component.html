@@ -102,12 +102,46 @@
       </nav>
       <div class="header-account">
         <app-campana />
-        <div class="header-user">
-          <div class="avatar" aria-hidden="true">{{ iniciales }}</div>
-          <div class="usuario-texto">
-            <span class="usuario-nombre">{{ authService.sesionActual()?.nombreCompleto }}</span>
-            <span class="usuario-rol">{{ authService.etiquetaRol() }}</span>
-          </div>
+        <div class="cuenta" #cuenta>
+          <button class="header-user" type="button" (click)="alternarCuenta()" [attr.aria-expanded]="cuentaAbierta()" aria-haspopup="menu" aria-controls="menu-cuenta" aria-label="Abrir menú de cuenta">
+            <span class="avatar" aria-hidden="true"><span>{{ iniciales }}</span><i class="estado-punto"></i></span>
+            <span class="usuario-texto">
+              <span class="usuario-nombre">{{ authService.sesionActual()?.nombreCompleto }}</span>
+            </span>
+            <svg class="cuenta-chevron" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+          </button>
+
+          @if (cuentaAbierta()) {
+            <div id="menu-cuenta" class="menu-cuenta" role="menu" aria-label="Menú de cuenta">
+              <div class="cuenta-identidad">
+                <span class="avatar avatar-grande" aria-hidden="true"><span>{{ iniciales }}</span></span>
+                <div class="cuenta-identidad-texto">
+                  <strong>{{ authService.sesionActual()?.nombreCompleto }}</strong>
+                  @if (perfil(); as p) {
+                    <span class="cuenta-dato" [title]="p.email">{{ p.email }}</span>
+                    <span class="cuenta-dato">{{ p.area || 'Sin área asignada' }}</span>
+                  } @else if (cargandoPerfil()) {
+                    <span class="cuenta-dato">Cargando datos…</span>
+                  } @else if (errorPerfil()) {
+                    <button type="button" class="cuenta-reintentar" (click)="cargarPerfil()">Reintentar carga</button>
+                  }
+                </div>
+              </div>
+              <div class="cuenta-separador" role="none"></div>
+              <button type="button" class="cuenta-opcion" role="menuitem" (click)="abrirPerfil()">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v1"/></svg>
+                <span>Mi perfil</span>
+              </button>
+              <a class="cuenta-opcion" role="menuitem" [routerLink]="rutaInicio" (click)="cerrarCuenta()">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/><path d="M9 21v-6h6v6"/></svg>
+                <span>{{ etiquetaInicio }}</span>
+              </a>
+              <button type="button" class="cuenta-opcion opcion-salir" role="menuitem" (click)="cerrarSesion()">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg>
+                <span>Cerrar sesión</span>
+              </button>
+            </div>
+          }
         </div>
       </div>
     </header>
@@ -117,3 +151,30 @@
     </main>
   </div>
 </div>
+
+@if (perfilAbierto()) {
+  <div class="perfil-modal" (click)="cerrarPerfil()">
+    <section class="perfil-dialogo" role="dialog" aria-modal="true" aria-labelledby="perfil-titulo" (click)="$event.stopPropagation()">
+      <header class="perfil-cabecera">
+        <div><small>Cuenta</small><h2 id="perfil-titulo">Mi perfil</h2></div>
+        <button type="button" class="perfil-cerrar" (click)="cerrarPerfil()" aria-label="Cerrar perfil">×</button>
+      </header>
+      <div class="perfil-identidad">
+        <span class="avatar avatar-hero" aria-hidden="true"><span>{{ iniciales }}</span></span>
+        <strong>{{ authService.sesionActual()?.nombreCompleto }}</strong>
+        <span class="perfil-rol" [attr.data-rol]="authService.sesionActual()?.rol">{{ authService.etiquetaRol() }}</span>
+        <span class="perfil-correo">{{ perfil()?.email || 'Cargando correo…' }}</span>
+      </div>
+      @if (errorPerfil()) {
+        <p class="perfil-error" role="alert">{{ errorPerfil() }} <button type="button" (click)="cargarPerfil()">Reintentar</button></p>
+      }
+      <dl class="perfil-datos">
+        <div><dt>Correo</dt><dd>{{ perfil()?.email || '—' }}</dd></div>
+        <div><dt>Área</dt><dd>{{ perfil()?.area || 'Sin área asignada' }}</dd></div>
+        <div><dt>Rol</dt><dd>{{ authService.etiquetaRol() }}</dd></div>
+        <div><dt>Estado</dt><dd><span class="perfil-estado" [class.inactivo]="perfil()?.estado === 'inactivo'">{{ perfil()?.estado === 'inactivo' ? 'Inactivo' : 'Activo' }}</span></dd></div>
+      </dl>
+      <footer class="perfil-pie"><button type="button" class="perfil-cerrar-boton" (click)="cerrarPerfil()">Cerrar</button></footer>
+    </section>
+  </div>
+}

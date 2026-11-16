@@ -3,7 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { Observable, tap } from 'rxjs';
 import { ConfiguracionService } from './configuracion.service';
 import { environment } from '../../../environments/environment';
-import { Comentario, HistorialCambio, NuevoTicket, Ticket } from '../models/ticket.model';
+import { Comentario, HistorialCambio, NuevoTicket, Ticket, Adjunto } from '../models/ticket.model';
 
 /** Consume la API REST de tickets expuesta por TicketController (CE0233). */
 @Injectable({ providedIn: 'root' })
@@ -47,5 +47,26 @@ export class TicketService {
 
   comentar(id: number, contenido: string): Observable<Comentario> {
     return this.http.post<Comentario>(`${this.base}/${id}/comentarios`, { contenido });
+  }
+
+  adjuntar(id: number, archivos: File[]): Observable<Adjunto[]> {
+    const datos = new FormData();
+    archivos.forEach(archivo => datos.append('archivos', archivo, archivo.name));
+    return this.http.post<Adjunto[]>(`${this.base}/${id}/adjuntos`, datos);
+  }
+
+  listarAdjuntos(id: number): Observable<Adjunto[]> {
+    return this.http.get<Adjunto[]>(`${this.base}/${id}/adjuntos`);
+  }
+
+  descargarAdjunto(adjuntoId: number): Observable<Blob> {
+    return this.http.get(`${environment.apiUrl}/adjuntos/${adjuntoId}/contenido`, { responseType: 'blob' });
+  }
+  eliminarAdjunto(adjuntoId: number): Observable<void> {
+    return this.http.delete<void>(`${environment.apiUrl}/adjuntos/${adjuntoId}`);
+  }
+
+  eliminar(id: number): Observable<void> {
+    return this.http.delete<void>(`${this.base}/${id}`).pipe(tap(() => this.config.notificar('cambio', 'Ticket eliminado')));
   }
 }

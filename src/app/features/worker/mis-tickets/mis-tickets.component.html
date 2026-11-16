@@ -61,7 +61,14 @@
             <span [class]="clasePrioridad(t.prioridad)">{{ etiquetaPrioridad(t.prioridad) }}</span>
             <span [class]="claseEstado(t.estado)">{{ etiquetaEstado(t.estado) }}</span>
           </div>
-          <a [routerLink]="['/tickets', t.id]" class="ver-detalle" [attr.aria-label]="'Ver seguimiento de ' + t.codigoUnico">Ver seguimiento</a>
+          <div class="acciones-solicitud">
+            <a [routerLink]="['/tickets', t.id]" class="ver-detalle" [attr.aria-label]="'Ver seguimiento de ' + t.codigoUnico">Ver seguimiento</a>
+            @if (puedeEliminar(t)) {
+              <button type="button" class="eliminar-solicitud" [disabled]="eliminando() === t.id" (click)="eliminarTicket(t)" [attr.aria-label]="'Eliminar ticket ' + t.codigoUnico" title="Eliminar ticket">
+                <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M9 6V3h6v3M5 6l1 15h12l1-15M10 10v7M14 10v7"/></svg>
+              </button>
+            }
+          </div>
         </article>
       }
     </div>
@@ -101,6 +108,19 @@
           </select>
         </label>
 
+        <label>
+          <span>Adjuntar evidencia (opcional)</span>
+          <input type="file" accept=".png,.jpg,.jpeg" multiple [disabled]="enviando()" (change)="seleccionarArchivos($event)">
+          <small>Fotos PNG o JPG · hasta 10 MB por foto · máximo 5 fotos</small>
+        </label>
+        @for (archivo of archivos(); track $index) {
+          <div class="modal-actions">
+            <span>{{ archivo.name }}</span>
+            <button type="button" class="btn-secondary" [disabled]="enviando()" (click)="quitarArchivo($index)" [attr.aria-label]="'Quitar ' + archivo.name" title="Quitar archivo">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 6h18M9 6V3h6v3M5 6l1 15h12l1-15M10 10v7M14 10v7"/></svg>
+            </button>
+          </div>
+        }
         @if (errorModal()) {
           <p class="modal-error" role="alert">{{ errorModal() }}</p>
         }
@@ -108,7 +128,7 @@
         <footer class="modal-actions">
           <button type="button" class="btn-secondary" (click)="cerrarModal()" [disabled]="enviando()">Cancelar</button>
           <button type="submit" class="btn-submit" [disabled]="enviando()">
-            {{ enviando() ? 'Enviando...' : 'Enviar solicitud' }}
+            {{ enviando() ? 'Enviando...' : ticketCreado() ? 'Reintentar evidencia' : 'Enviar solicitud' }}
           </button>
         </footer>
       </form>

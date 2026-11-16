@@ -1,10 +1,12 @@
 import { CampanaComponent } from '../../notificaciones/campana.component';
 import Swal from 'sweetalert2';
 import { ConfiguracionService } from '../../../core/services/configuracion.service';
-import { effect, inject, Component } from '@angular/core';
+import { Component, ElementRef, HostListener, ViewChild, effect, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { NavigationEnd, Router, RouterLink, RouterOutlet } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
+import { UsuarioService } from '../../../core/services/usuario.service';
+import { UsuarioAdmin } from '../../../core/models/usuario.model';
 import { filter } from 'rxjs';
 
 interface ItemMenu {
@@ -27,13 +29,22 @@ interface ItemMenu {
 })
 export class AppShellComponent {
   config = inject(ConfiguracionService);
+  private usuarios = inject(UsuarioService);
+  @ViewChild('cuenta') private cuentaRef?: ElementRef<HTMLElement>;
   colapsado = false;
   menuMovilAbierto = false;
+  cuentaAbierta = signal(false);
+  perfilAbierto = signal(false);
+  perfil = signal<UsuarioAdmin | null>(null);
+  cargandoPerfil = signal(false);
+  errorPerfil = signal('');
 
   constructor(public authService: AuthService, private router: Router) {
     effect(() => { this.colapsado = this.config.actual().sidebarColapsado; });
     this.router.events.pipe(filter((event) => event instanceof NavigationEnd)).subscribe(() => {
       this.menuMovilAbierto = false;
+      this.cerrarCuenta();
+      this.perfilAbierto.set(false);
     });
   }
 
@@ -78,6 +89,56 @@ export class AppShellComponent {
     return nombre.split(' ').filter(Boolean).slice(0, 2).map((p) => p[0]).join('').toUpperCase();
   }
 
+  get rutaInicio(): string { return this.authService.rutaInicioSegunRol(); }
+
+  get etiquetaInicio(): string {
+    if (this.authService.tieneRol('rol_solicitante')) return 'Mis solicitudes';
+    if (this.authService.tieneRol('rol_tecnico')) return 'Mi cola';
+    return 'Panel de control';
+  }
+
+  alternarCuenta(): void {
+    const abrir = !this.cuentaAbierta();
+    this.cuentaAbierta.set(abrir);
+    if (abrir) this.cargarPerfil();
+  }
+
+  cerrarCuenta(): void { this.cuentaAbierta.set(false); }
+
+  abrirPerfil(): void {
+    this.cerrarCuenta();
+    this.perfilAbierto.set(true);
+    this.cargarPerfil();
+  }
+
+  cerrarPerfil(): void { this.perfilAbierto.set(false); }
+
+  cargarPerfil(): void {
+    if (this.cargandoPerfil()) return;
+    this.cargandoPerfil.set(true);
+    this.errorPerfil.set('');
+    this.usuarios.perfil().subscribe({
+      next: perfil => { this.perfil.set(perfil); this.cargandoPerfil.set(false); },
+      error: () => {
+        this.cargandoPerfil.set(false);
+        this.errorPerfil.set('No se pudieron cargar tus datos de perfil.');
+      }
+    });
+  }
+
+  @HostListener('document:click', ['$event'])
+  cerrarFuera(evento: MouseEvent): void {
+    if (!this.cuentaAbierta()) return;
+    if (this.cuentaRef?.nativeElement.contains(evento.target as Node)) return;
+    this.cerrarCuenta();
+  }
+
+  @HostListener('document:keydown.escape')
+  cerrarCapas(): void {
+    if (this.perfilAbierto()) { this.cerrarPerfil(); return; }
+    if (this.cuentaAbierta()) this.cerrarCuenta();
+  }
+
   alternarMenuMovil(): void {
     this.menuMovilAbierto = !this.menuMovilAbierto;
   }
@@ -105,6 +166,7 @@ export class AppShellComponent {
   }
 
   async cerrarSesion(): Promise<void> {
+    this.cerrarCuenta(); this.perfilAbierto.set(false);
     if (this.config.actual().confirmarSalida && !(await Swal.fire({ title: '\u00bfCerrar sesi\u00f3n?', icon: 'question', showCancelButton: true, confirmButtonText: 'Cerrar sesi\u00f3n', cancelButtonText: 'Cancelar', confirmButtonColor: '#122d3e' })).isConfirmed) return;
     // La navegacion permite al formulario de configuracion proteger cambios pendientes.
     const salio = await this.router.navigate(['/login']);

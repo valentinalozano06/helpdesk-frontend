@@ -68,7 +68,14 @@
               </td>
               <td class="fecha">{{ config.fecha(t.fechaCreacion) }}</td>
               @if (config.actual().slaActivo) { <td><span class="sla-chip" [class.vencido]="config.sla(t).vencido" [attr.title]="config.sla(t).limite ? 'Vence: ' + config.fecha(config.sla(t).limite) : null">{{ config.sla(t).texto }}</span></td> }
-              <td class="col-acciones"><a [routerLink]="['/tickets', t.id]" class="abrir-ticket" [attr.aria-label]="'Atender ticket ' + t.codigoUnico" title="Atender ticket"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M7 7h10v10"/></svg></a></td>
+              <td class="col-acciones">
+                <div class="acciones-fila">
+                  <a [routerLink]="['/tickets', t.id]" class="abrir-ticket" [attr.aria-label]="'Atender ticket ' + t.codigoUnico" title="Atender ticket"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M7 7h10v10"/></svg></a>
+                  <button type="button" class="eliminar-ticket" [disabled]="eliminando() === t.id" (click)="eliminar(t)" [attr.aria-label]="'Eliminar ticket ' + t.codigoUnico" title="Eliminar ticket">
+                    <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M9 6V3h6v3M5 6l1 15h12l1-15M10 10v7M14 10v7"/></svg>
+                  </button>
+                </div>
+              </td>
             </tr>
           } @empty {
             <tr><td [attr.colspan]="config.actual().slaActivo ? 9 : 8" class="vacio">No hay tickets que coincidan con los filtros.</td></tr>

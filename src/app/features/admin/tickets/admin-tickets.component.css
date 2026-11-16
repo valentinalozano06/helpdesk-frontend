@@ -45,9 +45,13 @@
 .select-estado[data-estado=resuelto] { background:#eaf5e9; color:#4c7b48; border-color:#d4e8d1; }
 .select-estado[data-estado=cerrado] { background:#f1f2ef; color:#758071; }
 .fecha { color: #718375; font-size: 13px!important; white-space: nowrap; }
-.col-acciones { width: 64px; }
+.col-acciones { width: 104px; }
+.acciones-fila { display: flex; align-items: center; gap: 8px; }
 .abrir-ticket { display: grid; place-items: center; width: 40px; height: 40px; border: 1px solid #e1e8d6; border-radius: 13px; background: #f2f6e9; color: #173346; transition: background .18s, transform .18s; }
 .abrir-ticket:hover { background: var(--app-acento, #d6f58a); transform: translateY(-2px); }
+.eliminar-ticket { display: grid; place-items: center; width: 40px; height: 40px; border: 1px solid #f0d5d1; border-radius: 13px; background: #fff5f3; color: #b24840; cursor: pointer; transition: background .18s, transform .18s, opacity .18s; }
+.eliminar-ticket:hover:not(:disabled) { background: #ffe6e2; transform: translateY(-2px); }
+.eliminar-ticket:disabled { opacity: .5; cursor: progress; }
 .tabla-footer { display: flex; align-items: center; justify-content: space-between; gap: 16px; min-height: 62px; padding: 14px 22px; border-top: 1px solid #eef2ea; color: #7a897b; font-size: 13px; }
 .tabla-footer button { display: flex; align-items: center; gap: 10px; border: 0; border-radius: 10px; background: #f1f5e9; padding: 9px 12px; color: #48643f; font: inherit; font-weight: 800; cursor: pointer; }
 .tabla-footer button span { font-size: 18px; }
@@ -57,4 +61,4 @@
 a:focus-visible, button:focus-visible, select:focus-visible, .tabla-scroll:focus-visible { outline: 2px solid #74934b; outline-offset: 3px; }
 @media (max-width: 1000px) { .buscador-tabla { flex-basis: 100%; } .filtros select { flex: 1; min-width: 150px; } }
 @media (max-width: 600px) { .barra-filtros { padding: 16px; } .buscador-tabla { min-width: 0; } .filtros { gap: 10px; } .filtros select { min-width: 0; width: 100%; flex-basis: 100%; } .tabla-footer { padding: 14px 16px; } .cabecera h1 { font-size: 28px; } }
-@media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition: none!important; } .abrir-ticket:hover { transform: none; } }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition: none!important; } .abrir-ticket:hover, .eliminar-ticket:hover { transform: none; } }

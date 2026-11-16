@@ -98,7 +98,7 @@
   .resumen { grid-template-columns: 1fr; }
   .solicitud-item { grid-template-columns: 1fr; gap: 10px; align-items: start; }
   .solicitud-tags { justify-content: flex-start; }
-  .ver-detalle { justify-self: start; }
+  .acciones-solicitud { justify-self: start; }
 }
 @media (max-width: 560px) {
   .solicitudes-head h1 { font-size: 28px; }
@@ -118,3 +118,7 @@
 .ver-detalle:hover { background: #edf3e4; border-color: #97ab82; }
 .ver-detalle:focus-visible { outline: 2px solid #668345; outline-offset: 3px; }
 .solicitud-titulo { font-weight: 600; }
+.acciones-solicitud { display: inline-flex; align-items: center; gap: 8px; }
+.eliminar-solicitud { display: grid; place-items: center; width: 40px; height: 40px; border: 1px solid #efd6d1; border-radius: 8px; background: #fff6f3; color: #b24840; cursor: pointer; transition: background .18s, border-color .18s; }
+.eliminar-solicitud:hover:not(:disabled) { background: #ffe9e4; border-color: #dfa9a1; }
+.eliminar-solicitud:disabled { opacity: .55; cursor: progress; }

@@ -3,6 +3,7 @@ import { inject, Component, OnInit, computed, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
+import Swal from 'sweetalert2';
 import { Catalogo, Ticket } from '../../../core/models/ticket.model';
 import { AuthService } from '../../../core/services/auth.service';
 import { CatalogoService } from '../../../core/services/catalogo.service';
@@ -28,6 +29,7 @@ export class AdminTicketsComponent implements OnInit {
   actualizandoPrioridad = signal<number | null>(null);
   actualizandoEstado = signal<number | null>(null);
   asignandoTecnico = signal<number | null>(null);
+  eliminando = signal<number | null>(null);
 
   busqueda = signal('');
   filtroEstado = signal('');
@@ -140,6 +142,42 @@ export class AdminTicketsComponent implements OnInit {
       error: () => {
         this.mensajeError.set('No se pudo asignar el tecnico al ticket.');
         this.asignandoTecnico.set(null);
+      }
+    });
+  }
+
+  async eliminar(ticket: Ticket): Promise<void> {
+    const resultado = await Swal.fire({
+      title: '¿Eliminar ticket?',
+      text: `${ticket.codigoUnico} — ${ticket.asunto}. Esta acción es permanente: se borrarán comentarios, historial, fotos y notificaciones. Escribe el código del ticket para confirmar.`,
+      input: 'text',
+      inputPlaceholder: ticket.codigoUnico,
+      inputValidator: (valor) => (valor ?? '').trim().toUpperCase() === ticket.codigoUnico.toUpperCase()
+        ? null
+        : `Escribe exactamente ${ticket.codigoUnico}`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Sí, eliminar',
+      cancelButtonText: 'Cancelar',
+      confirmButtonColor: '#c0392b',
+      cancelButtonColor: '#8c9a91',
+      focusCancel: true
+    });
+    if (!resultado.isConfirmed) return;
+
+    this.mensajeError.set(null);
+    this.eliminando.set(ticket.id);
+    this.ticketService.eliminar(ticket.id).subscribe({
+      next: () => {
+        this.tickets.update((tickets) => tickets.filter((t) => t.id !== ticket.id));
+        this.eliminando.set(null);
+        void Swal.fire({ icon: 'success', title: 'Ticket eliminado', confirmButtonText: 'Aceptar', confirmButtonColor: '#173346' });
+      },
+      error: (err) => {
+        this.eliminando.set(null);
+        this.mensajeError.set(err?.status === 403
+          ? 'No tienes permiso para eliminar este ticket.'
+          : 'No se pudo eliminar el ticket. Inténtalo nuevamente.');
       }
     });
   }
