@@ -1,13 +1,16 @@
-# syntax=docker/dockerfile:1
-
-FROM node:20-alpine
+# Build the Angular application once, then serve static production files.
+FROM node:20-alpine AS build
 WORKDIR /app
 
 COPY package*.json ./
 RUN npm ci
 
 COPY . .
+RUN npm run build -- --configuration production
+
+FROM nginx:alpine
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+COPY --from=build /app/dist/helpdesk-morales/browser /usr/share/nginx/html
 
 EXPOSE 8080
-
-CMD ["npm", "start", "--", "--host", "0.0.0.0", "--port", "8080", "--poll", "2000", "--disable-host-check"]
+CMD ["nginx", "-g", "daemon off;"]
