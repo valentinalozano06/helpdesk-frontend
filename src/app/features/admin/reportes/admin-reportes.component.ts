@@ -24,11 +24,12 @@ interface Barra { etiqueta: string; valor: number; color: string; }
 })
 export class AdminReportesComponent implements OnInit {
   config = inject(ConfiguracionService);
-    datos = signal<Ticket[]>([]);
+  datos = signal<Ticket[]>([]);
   rango = signal({ desde: this.primerDiaDelMes(), hasta: this.hoyIso() });
   cargando = signal(false);
   error = signal('');
   exportando = signal<'pdf' | 'xlsx' | null>(null);
+  actualizado = signal<Date | null>(null);
   rangoCorrecto = computed(() => rangoValido(this.rango().desde, this.rango().hasta));
   tickets = computed(() => filtrarTickets(this.datos(), this.rango().desde, this.rango().hasta));
   reporte = computed(() => crearReporte(this.tickets(), this.rango().desde, this.rango().hasta, this.config.actual()));
@@ -48,7 +49,7 @@ export class AdminReportesComponent implements OnInit {
     if (!this.rangoCorrecto() || this.cargando()) return;
     this.cargando.set(true); this.error.set('');
     this.ticketService.listar().subscribe({
-      next: datos => { this.datos.set(datos); this.cargando.set(false); },
+      next: datos => { this.datos.set(datos); this.actualizado.set(new Date()); this.cargando.set(false); },
       error: () => { this.datos.set([]); this.cargando.set(false); this.error.set('No se pudieron cargar los tickets. Intenta actualizar el reporte.'); }
     });
   }
@@ -88,11 +89,14 @@ export class AdminReportesComponent implements OnInit {
   });
 
   ticketsCriticos = computed(() => this.tickets().filter((t) => t.prioridad === 'critica').length);
+  ticketsNoResueltos = computed(() => this.tickets().filter((t) => t.estado === 'no_resuelto').length);
 
   porCategoria = computed<Barra[]>(() => {
     const conteo = new Map<string, number>();
     for (const t of this.tickets()) conteo.set(t.categoria, (conteo.get(t.categoria) ?? 0) + 1);
-    return Array.from(conteo.entries()).map(([etiqueta, valor]) => ({ etiqueta, valor, color: '#0b2547' }));
+    const paleta = ['#173346', '#789b4b', '#dfab2d', '#e47732', '#6c8eae', '#ab5a50', '#8066a3'];
+    return Array.from(conteo.entries()).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+      .map(([etiqueta, valor], i) => ({ etiqueta, valor, color: paleta[i % paleta.length] }));
   });
 
   porPrioridad = computed<Barra[]>(() => {
@@ -106,10 +110,10 @@ export class AdminReportesComponent implements OnInit {
 
   distribucionEstado = computed(() => {
     const colores: Record<string, string> = {
-      abierto: '#d6362f', en_progreso: '#f08a1f', en_espera: '#e0b020', resuelto: '#2fa860', cerrado: '#8b98a5'
+      abierto: '#d6362f', en_progreso: '#f08a1f', en_espera: '#e0b020', resuelto: '#2fa860', cerrado: '#8b98a5', requiere_revision: '#74549a', no_resuelto: '#b24840'
     };
     const etiquetas: Record<string, string> = {
-      abierto: 'Abierto', en_progreso: 'En progreso', en_espera: 'En espera', resuelto: 'Resuelto', cerrado: 'Cerrado'
+      abierto: 'Abierto', en_progreso: 'En progreso', en_espera: 'En espera', resuelto: 'Finalizado', cerrado: 'Cerrado', requiere_revision: 'Requiere revisión', no_resuelto: 'No resuelto'
     };
     return Object.keys(etiquetas)
       .map((estado) => ({
@@ -135,6 +139,10 @@ export class AdminReportesComponent implements OnInit {
 
   maxCategoria = computed(() => Math.max(1, ...this.porCategoria().map((b) => b.valor)));
   maxPrioridad = computed(() => Math.max(1, ...this.porPrioridad().map((b) => b.valor)));
+  porcentajeEstado(valor: number): number { return this.total() ? Math.round(valor / this.total() * 100) : 0; }
+  porcentajePrioridad(valor: number): number { return this.porcentajeEstado(valor); }
+  porcentajeEquipo(valor: number, total: number): number { return total ? Math.round(valor / total * 100) : 0; }
+  iniciales(nombre: string): string { return nombre.trim().split(/\s+/).slice(0, 2).map(p => p[0] || '').join('').toUpperCase(); }
 
   private primerDiaDelMes(): string {
     const d = new Date();

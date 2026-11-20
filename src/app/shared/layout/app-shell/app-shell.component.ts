@@ -155,6 +155,7 @@ export class AppShellComponent {
       { etiqueta: 'Dashboard', ruta: '/admin/dashboard', icono: 'grid' },
       { etiqueta: 'Tickets', ruta: '/admin/tickets', icono: 'tickets' }
     ];
+    items.push({ etiqueta: 'Escalamientos', ruta: '/admin/escalamientos', icono: 'tickets' });
     if (this.authService.tieneRol('rol_admin', 'rol_jefatura')) {
       items.push({ etiqueta: 'Usuarios', ruta: '/admin/usuarios', icono: 'usuarios' });
     }

@@ -43,7 +43,7 @@ export class WorkerInicioComponent implements OnInit {
   etiquetaEstado(estado: string): string {
     const mapa: Record<string, string> = {
       abierto: 'Abierto', en_progreso: 'En progreso', en_espera: 'En espera',
-      resuelto: 'Resuelto', cerrado: 'Cerrado'
+      resuelto: 'Finalizado', cerrado: 'Cerrado', requiere_revision: 'En revisión', no_resuelto: 'No resuelto'
     };
     return mapa[estado] ?? estado;
   }

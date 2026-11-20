@@ -1,7 +1,7 @@
 import { Configuracion, CONFIG_INICIAL } from '../../../core/models/configuracion.model';
 import { Ticket } from '../../../core/models/ticket.model';
 
-export const etiquetas: Record<string, string> = { abierto: 'Abierto', en_progreso: 'En progreso', en_espera: 'En espera', resuelto: 'Resuelto', cerrado: 'Cerrado', baja: 'Baja', media: 'Media', alta: 'Alta', critica: 'Crítica' };
+export const etiquetas: Record<string, string> = { abierto: 'Abierto', en_progreso: 'En progreso', en_espera: 'En espera', resuelto: 'Finalizado', cerrado: 'Cerrado', requiere_revision: 'Requiere revisión', no_resuelto: 'No resuelto', baja: 'Baja', media: 'Media', alta: 'Alta', critica: 'Crítica' };
 export const etiqueta = (valor: string) => etiquetas[valor] ?? valor;
 export const terminado = (t: Ticket) => ['resuelto', 'cerrado'].includes(t.estado);
 export function rangoValido(desde: string, hasta: string): boolean {
@@ -21,12 +21,14 @@ export function crearReporte(tickets: Ticket[], desde: string, hasta: string, co
     return [...grupos].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])).map(([nombre, cantidad]) => ({ nombre: etiqueta(nombre), cantidad, proporcion: tickets.length ? cantidad / tickets.length : 0 }));
   };
   const resueltos = tickets.filter(terminado).length;
+  const noResueltos = tickets.filter(t => t.estado === 'no_resuelto').length;
+  const pendientes = tickets.filter(t => ['abierto','en_progreso','en_espera','requiere_revision'].includes(t.estado)).length;
   const tecnicos = [...new Set(tickets.map(t => t.asignadoA || 'Sin asignar'))].sort().map(nombre => {
     const grupo = tickets.filter(t => (t.asignadoA || 'Sin asignar') === nombre);
     const completados = grupo.filter(terminado).length;
-    return { nombre, total: grupo.length, resueltos: completados, pendientes: grupo.length - completados };
+    return { nombre, total: grupo.length, resueltos: completados, pendientes: grupo.filter(t => ['abierto','en_progreso','en_espera','requiere_revision'].includes(t.estado)).length };
   });
-  return { nombre: configuracion.nombre, institucion: configuracion.institucion, formatoFecha: configuracion.formatoFecha, tickets: [...tickets], desde, hasta, generado: new Date(), total: tickets.length, resueltos, pendientes: tickets.length - resueltos,
+  return { nombre: configuracion.nombre, institucion: configuracion.institucion, formatoFecha: configuracion.formatoFecha, tickets: [...tickets], desde, hasta, generado: new Date(), total: tickets.length, resueltos, noResueltos, pendientes,
     criticos: tickets.filter(t => t.prioridad === 'critica').length, tasa: tickets.length ? resueltos / tickets.length : 0,
     estados: agrupar('estado'), prioridades: agrupar('prioridad'), categorias: agrupar('categoria'), tecnicos };
 }
@@ -37,7 +39,7 @@ const fecha = (s: string, formato = 'dd/MM/yyyy') => {
   return formato === 'yyyy-MM-dd' ? `${anio}-${mes}-${dia}` : formato === 'MM/dd/yyyy' ? `${mes}/${dia}/${anio}` : `${dia}/${mes}/${anio}`;
 };
 const periodo = (r: Reporte) => `${fecha(r.desde, r.formatoFecha)} al ${fecha(r.hasta, r.formatoFecha)}`;
-const resumen = (r: Reporte) => [['Total de tickets', r.total], ['Resueltos o cerrados', r.resueltos], ['Pendientes', r.pendientes], ['Tickets críticos', r.criticos], ['Tasa de resolución', `${Math.round(r.tasa * 100)}%`]] as (string | number)[][];
+const resumen = (r: Reporte) => [['Total de tickets', r.total], ['Finalizados o cerrados', r.resueltos], ['Pendientes de atención o revisión', r.pendientes], ['No resueltos', r.noResueltos], ['Tickets críticos', r.criticos], ['Tasa de resolución', `${Math.round(r.tasa * 100)}%`]] as (string | number)[][];
 
 export async function generarPdf(r: Reporte): Promise<Blob> {
   const [{ jsPDF }, { autoTable }] = await Promise.all([import('jspdf'), import('jspdf-autotable')]);
@@ -71,7 +73,7 @@ export async function generarPdf(r: Reporte): Promise<Blob> {
   tabla('Estadísticas del periodo', ['Dimensión', 'Grupo', 'Tickets', 'Porcentaje'],
     [['Estado', r.estados], ['Prioridad', r.prioridades], ['Categoría', r.categorias]].flatMap(([grupo, valores]) =>
       (valores as Reporte['estados']).map(v => [grupo as string, v.nombre, v.cantidad, `${Math.round(v.proporcion * 100)}%`])));
-  tabla('Carga actual del equipo', ['Técnico', 'Asignados', 'Resueltos / cerrados', 'Pendientes'], r.tecnicos.map(t => [t.nombre, t.total, t.resueltos, t.pendientes]));
+  tabla('Carga actual del equipo', ['Técnico', 'Asignados', 'Finalizados / cerrados', 'Pendientes'], r.tecnicos.map(t => [t.nombre, t.total, t.resueltos, t.pendientes]));
   tabla('Detalle de tickets', ['Código', 'Asunto', 'Categoría', 'Prioridad', 'Estado', 'Solicitante', 'Técnico', 'Creación'],
     r.tickets.map(t => [t.codigoUnico, t.asunto, t.categoria, etiqueta(t.prioridad), etiqueta(t.estado), t.solicitante, t.asignadoA || 'Sin asignar', fecha(t.fechaCreacion, r.formatoFecha)]));
   const paginas = doc.getNumberOfPages();
@@ -98,12 +100,12 @@ export async function generarExcel(r: Reporte): Promise<Blob> {
     }); });
     return ws;
   };
-  hoja('Resumen', ['Indicador', 'Valor'], [...resumen(r), ['Criterio', 'Fecha de creación; resueltos incluye cerrados.'], ['Alcance', 'Estado y técnico actuales, no historial de asignaciones.']], [36, 95]);
+    hoja('Resumen', ['Indicador', 'Valor'], [...resumen(r), ['Criterio', 'Fecha de creación; finalizados incluye tickets cerrados. Los no resueltos se cuentan por separado.'], ['Alcance', 'Estado y técnico actuales, no historial de asignaciones.']], [36, 95]);
   for (const [nombre, datos] of [['Estados', r.estados], ['Prioridades', r.prioridades], ['Categorías', r.categorias]] as const) {
     const ws = hoja(nombre, ['Grupo', 'Tickets', 'Porcentaje'], datos.map(d => [d.nombre, d.cantidad, d.proporcion]), [42, 18, 20]);
     ws.getColumn(3).numFmt = '0.0%';
   }
-  hoja('Equipo', ['Técnico', 'Asignados', 'Resueltos / cerrados', 'Pendientes'], r.tecnicos.map(t => [t.nombre, t.total, t.resueltos, t.pendientes]), [38, 18, 25, 18]);
+    hoja('Equipo', ['Técnico', 'Asignados', 'Finalizados / cerrados', 'Pendientes'], r.tecnicos.map(t => [t.nombre, t.total, t.resueltos, t.pendientes]), [38, 18, 25, 18]);
   const fechaExcel = (s: string | null) => { const d = s ? new Date(s) : null; return d && !isNaN(d.getTime()) ? d : null; };
   hoja('Tickets', ['Código', 'Asunto', 'Descripción', 'Categoría', 'Prioridad', 'Estado', 'Solicitante', 'Técnico', 'Creación', 'Actualización'],
     r.tickets.map(t => [t.codigoUnico, t.asunto, t.descripcion, t.categoria, etiqueta(t.prioridad), etiqueta(t.estado), t.solicitante, t.asignadoA || 'Sin asignar', fechaExcel(t.fechaCreacion), fechaExcel(t.fechaUltimaActualizacion)]),

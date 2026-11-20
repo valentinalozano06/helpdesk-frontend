@@ -21,9 +21,11 @@ export class AdminDashboardComponent implements OnInit {
     { id: 'abierto', nombre: 'Abiertos', tono: 'coral', icono: 'circle', detalle: 'Listos para atender' },
     { id: 'en_progreso', nombre: 'En progreso', tono: 'blue', icono: 'clock', detalle: 'Soluciones en marcha' },
     { id: 'en_espera', nombre: 'En espera', tono: 'amber', icono: 'pause', detalle: 'Pendientes de continuar' },
-    { id: 'resuelto', nombre: 'Resueltos', tono: 'green', icono: 'check', detalle: 'Un paso más adelante' }
+    { id: 'resuelto', nombre: 'Finalizados', tono: 'green', icono: 'check', detalle: 'Atenciones finalizadas' },
+    { id: 'requiere_revision', nombre: 'En revisión', tono: 'amber', icono: 'clock', detalle: 'Escalados a Jefatura' },
+    { id: 'no_resuelto', nombre: 'No resueltos', tono: 'muted', icono: 'circle', detalle: 'Cerrados sin solución' }
   ];
-  distribucion = computed(() => [...this.estados, { id: 'cerrado', nombre: 'Cerrados', tono: 'muted' }]
+  distribucion = computed(() => [...this.estados, { id: 'cerrado', nombre: 'Cerrados', tono: 'muted', icono: 'check', detalle: 'Cerrados' }]
     .map(e => ({ ...e, cantidad: this.contarPorEstado(e.id), porcentaje: this.tickets().length ? this.contarPorEstado(e.id) / this.tickets().length * 100 : 0 })));
   sinAsignar = computed(() => this.tickets().filter(t => this.activo(t) && !t.asignadoA?.trim()).length);
   atencion = computed(() => this.tickets().filter(t => this.activo(t) && (!t.asignadoA?.trim() || ['critica', 'alta'].includes(t.prioridad)))
@@ -56,9 +58,9 @@ export class AdminDashboardComponent implements OnInit {
     });
   }
   contarPorEstado(estado: string): number { return this.tickets().filter(t => t.estado === estado).length; }
-  etiquetaEstado(estado: string): string { return ({ abierto: 'Abierto', en_progreso: 'En progreso', en_espera: 'En espera', resuelto: 'Resuelto', cerrado: 'Cerrado' } as Record<string, string>)[estado] ?? estado; }
+  etiquetaEstado(estado: string): string { return ({ abierto: 'Abierto', en_progreso: 'En progreso', en_espera: 'En espera', resuelto: 'Finalizado', cerrado: 'Cerrado', requiere_revision: 'Requiere revisión', no_resuelto: 'No resuelto' } as Record<string, string>)[estado] ?? estado; }
   iniciales(nombre: string): string { return nombre.trim().split(/\s+/).slice(0, 2).map(p => p[0]).join('').toUpperCase(); }
-  private activo(t: Ticket): boolean { return !['resuelto', 'cerrado'].includes(t.estado); }
+  private activo(t: Ticket): boolean { return !['resuelto', 'cerrado', 'no_resuelto', 'requiere_revision'].includes(t.estado); }
   private peso(t: Ticket): number { return (t.prioridad === 'critica' ? 6 : t.prioridad === 'alta' ? 3 : 0) + (!t.asignadoA?.trim() ? 1 : 0); }
   private fecha(t: Ticket): number { const n = Date.parse(t.fechaCreacion); return Number.isFinite(n) ? n : 0; }
 }

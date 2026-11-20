@@ -66,6 +66,8 @@
 .estado-en_progreso { background: #fff3df; color: #a26819; }
 .estado-en_espera { background: #f5f0dd; color: #806b24; }
 .estado-resuelto, .estado-cerrado { background: #e5f6ea; color: #338653; }
+.estado-requiere_revision { background: #fff4dd; color: #986d18; }
+.estado-no_resuelto { background: #fff0ed; color: #a94c42; }
 .ver-detalle { color: #173346; font-size: 14px; font-weight: 600; text-decoration: none; white-space: nowrap; }
 .ver-detalle:hover { color: #4d6d18; }
 

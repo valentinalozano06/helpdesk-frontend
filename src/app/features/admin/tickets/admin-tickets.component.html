@@ -10,8 +10,10 @@
         <option value="abierto">Abierto</option>
         <option value="en_progreso">En progreso</option>
         <option value="en_espera">En espera</option>
-        <option value="resuelto">Resuelto</option>
+        <option value="resuelto">Finalizado</option>
         <option value="cerrado">Cerrado</option>
+        <option value="requiere_revision">Requiere revisión</option>
+        <option value="no_resuelto">No resuelto</option>
       </select>
       <select [(ngModel)]="filtroPrioridad" aria-label="Filtrar por prioridad">
         <option value="">Todas las prioridades</option>
@@ -43,20 +45,21 @@
         <tbody>
           @for (t of filtrados(); track t.id) {
             <tr>
-              <td class="ticket-celda"><a [routerLink]="['/tickets', t.id]" class="ticket-asunto">{{ t.asunto }}</a><span class="ticket-codigo">{{ t.codigoUnico }}</span></td>
-              <td><div class="persona"><span class="persona-avatar" aria-hidden="true">{{ iniciales(t.solicitante) }}</span><span>{{ t.solicitante }}</span></div></td>
-              <td><span class="categoria-chip">{{ t.categoria }}</span></td>
-              <td>
+              <td class="ticket-celda" data-label="Ticket"><a [routerLink]="['/tickets', t.id]" class="ticket-asunto">{{ t.asunto }}</a><span class="ticket-codigo">{{ t.codigoUnico }}</span></td>
+              <td data-label="Solicitante"><div class="persona"><span class="persona-avatar" aria-hidden="true">{{ iniciales(t.solicitante) }}</span><span>{{ t.solicitante }}</span></div></td>
+              <td data-label="Categoría"><span class="categoria-chip">{{ t.categoria }}</span></td>
+              <td data-label="Prioridad">
                 <select class="select-inline select-prioridad" [attr.data-prioridad]="t.prioridad" [attr.aria-label]="'Prioridad de ' + t.codigoUnico" [ngModel]="prioridadIdActual(t.prioridad)" [disabled]="actualizandoPrioridad() === t.id || prioridades().length === 0" (change)="actualizarPrioridad(t, $event)">
                   @for (p of prioridades(); track p.id) { <option [value]="p.id">{{ p.nombre | titlecase }}</option> }
                 </select>
               </td>
-              <td>
+              <td data-label="Estado">
                 <select class="select-inline select-estado" [attr.data-estado]="t.estado" [attr.aria-label]="'Estado de ' + t.codigoUnico" [ngModel]="estadoIdActual(t.estado)" [disabled]="actualizandoEstado() === t.id || estados().length === 0" (change)="actualizarEstado(t, $event)">
-                  @for (e of estados(); track e.id) { <option [value]="e.id">{{ etiquetaEstado(e.nombre) }}</option> }
+                  @if (t.estado === 'requiere_revision' || t.estado === 'no_resuelto') { <option [value]="estadoIdActual(t.estado)" disabled>{{ etiquetaEstado(t.estado) }}</option> }
+                  @for (e of estadosEditables(); track e.id) { <option [value]="e.id">{{ etiquetaEstado(e.nombre) }}</option> }
                 </select>
               </td>
-              <td>
+              <td data-label="Técnico">
                 @if (puedeAsignar()) {
                   <select class="select-inline select-tecnico" [class.sin-asignar]="!t.asignadoA" [attr.aria-label]="'Técnico de ' + t.codigoUnico" [ngModel]="tecnicoIdActual(t.asignadoA)" [disabled]="asignandoTecnico() === t.id || tecnicos().length === 0" (change)="asignarTecnico(t, $event)">
                     <option value="" disabled>Sin asignar</option>
@@ -66,9 +69,9 @@
                   {{ t.asignadoA ?? 'Sin asignar' }}
                 }
               </td>
-              <td class="fecha">{{ config.fecha(t.fechaCreacion) }}</td>
-              @if (config.actual().slaActivo) { <td><span class="sla-chip" [class.vencido]="config.sla(t).vencido" [attr.title]="config.sla(t).limite ? 'Vence: ' + config.fecha(config.sla(t).limite) : null">{{ config.sla(t).texto }}</span></td> }
-              <td class="col-acciones">
+              <td class="fecha" data-label="Fecha">{{ config.fecha(t.fechaCreacion) }}</td>
+              @if (config.actual().slaActivo) { <td data-label="Plazo SLA"><span class="sla-chip" [class.vencido]="config.sla(t).vencido" [attr.title]="config.sla(t).limite ? 'Vence: ' + config.fecha(config.sla(t).limite) : null">{{ config.sla(t).texto }}</span></td> }
+              <td class="col-acciones" data-label="Acciones">
                 <div class="acciones-fila">
                   <a [routerLink]="['/tickets', t.id]" class="abrir-ticket" [attr.aria-label]="'Atender ticket ' + t.codigoUnico" title="Atender ticket"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M7 7h10v10"/></svg></a>
                   <button type="button" class="eliminar-ticket" [disabled]="eliminando() === t.id" (click)="eliminar(t)" [attr.aria-label]="'Eliminar ticket ' + t.codigoUnico" title="Eliminar ticket">

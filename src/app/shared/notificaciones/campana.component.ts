@@ -93,8 +93,16 @@ export class CampanaComponent implements OnInit {
     return ({
       ticket_asignado: 'Nueva asignación',
       ticket_creado: 'Ticket creado',
-      ticket_resuelto: 'Ticket resuelto',
-      ticket_comentado: 'Nuevo comentario'
+      ticket_resuelto: 'Ticket finalizado',
+      ticket_comentado: 'Nuevo comentario',
+      escalamiento_solicitado: 'Revisión solicitada a Jefatura',
+      escalamiento_devuelto: 'Ticket devuelto a TI',
+      escalamiento_pendiente: 'Revisión solicitada a Jefatura',
+      escalamiento_decidido: 'Jefatura revisó el escalamiento',
+      ticket_requiere_revision: 'Ticket enviado a revisión',
+      ticket_categoria_actualizada: 'Categoría del ticket actualizada',
+      ticket_no_resuelto: 'Ticket declarado no resuelto',
+      ticket_reasignado: 'Ticket reasignado'
     } as Record<string, string>)[n.tipoEvento] || 'Actualización de ticket';
   }
 }

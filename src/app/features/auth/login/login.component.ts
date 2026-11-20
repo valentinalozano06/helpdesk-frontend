@@ -21,14 +21,12 @@ export class LoginComponent {
   config = inject(ConfiguracionService);
   sesionVencida = new URLSearchParams(window.location.search).get('motivo') === 'inactividad';
   mostrarPassword = signal(false);
-  mostrarAyuda = signal(false);
   cargando = signal(false);
   errorMensaje = signal<string | null>(null);
 
   formulario = this.fb.group({
     email: ['', [Validators.required, Validators.email]],
-    password: ['', [Validators.required]],
-    recordar: [false]
+    password: ['', [Validators.required]]
   });
 
   constructor(private fb: FormBuilder, private authService: AuthService, private router: Router) {}

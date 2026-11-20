@@ -209,7 +209,9 @@ export class MisTicketsComponent implements OnInit {
       en_progreso: 'En proceso',
       en_espera: 'En espera',
       resuelto: 'Finalizado',
-      cerrado: 'Cerrado'
+      cerrado: 'Cerrado',
+      requiere_revision: 'En revisión',
+      no_resuelto: 'No resuelto'
     };
     return mapa[estado] ?? estado;
   }

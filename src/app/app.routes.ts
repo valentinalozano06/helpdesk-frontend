@@ -49,6 +49,11 @@ export const routes: Routes = [
         loadComponent: () => import('./features/admin/tickets/admin-tickets.component').then(m => m.AdminTicketsComponent)
       },
       {
+        path: 'admin/escalamientos',
+        canActivate: [roleGuard(['rol_admin', 'rol_jefatura'])],
+        loadComponent: () => import('./features/admin/escalamientos/admin-escalamientos.component').then(m => m.AdminEscalamientosComponent)
+      },
+      {
         path: 'admin/usuarios',
         canActivate: [roleGuard(['rol_admin', 'rol_jefatura'])],
         loadComponent: () => import('./features/admin/usuarios/admin-usuarios.component').then(m => m.AdminUsuariosComponent)

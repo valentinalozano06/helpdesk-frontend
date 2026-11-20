@@ -12,7 +12,7 @@
           <label>Nombre del sistema<input name="nombre" [(ngModel)]="form.nombre" maxlength="24" required /></label>
           <label>Nombre corto de institución<input name="nombreCorto" [(ngModel)]="form.nombreCorto" maxlength="28" required /></label>
           <label class="ancho">Institución<input name="institucion" [(ngModel)]="form.institucion" maxlength="90" required /></label>
-          <label>Correo de soporte<input name="soporte" type="email" [(ngModel)]="form.soporte" placeholder="soporte@institucion.gob.pe" maxlength="120" /><small>Contacto en «¿Olvidaste tu contraseña?».</small></label>
+          <label>Correo de soporte<input name="soporte" type="email" [(ngModel)]="form.soporte" placeholder="soporte@institucion.gob.pe" maxlength="120" /><small>Correo institucional de contacto.</small></label>
           <label>Formato de fecha<select name="formato" [(ngModel)]="form.formatoFecha"><option value="dd/MM/yyyy">Día / mes / año</option><option value="MM/dd/yyyy">Mes / día / año</option><option value="yyyy-MM-dd">Año - mes - día</option></select><small>Listados de tickets y reportes exportados.</small></label>
         </div>
         <div class="logo-editor"><div class="logo-preview"><img [src]="form.logo || 'assets/helpdesk-isotipo.svg'" alt="Vista previa del logo" /><span>{{ form.nombre }}<small>{{ form.nombreCorto }}</small></span></div><div><label class="btn-secondary archivo">Cambiar logo<input type="file" accept="image/png,image/jpeg,image/webp" (change)="cargarLogo($event)" /></label><button type="button" class="texto-btn" (click)="form.logo = ''" [disabled]="!form.logo">Usar isotipo original</button><p class="ayuda">PNG, JPG o WebP · hasta 500 KB y 2048 × 2048 px.</p></div></div>

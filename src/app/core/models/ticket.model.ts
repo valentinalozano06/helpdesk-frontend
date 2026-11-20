@@ -51,3 +51,32 @@ export interface Adjunto {
   usuario: string;
   fechaCreacion: string;
 }
+
+export interface Escalamiento {
+  id: number;
+  ticketId: number;
+  codigoUnico: string;
+  asunto: string;
+  solicitante: string;
+  tecnico: string;
+  categoria: string;
+  prioridad: string;
+  motivo: string;
+  diagnostico: string;
+  accionesIntentadas: string;
+  estado: 'pendiente' | 'devuelto' | 'no_resuelto';
+  decision: string | null;
+  decisionPor: string | null;
+  fechaCreacion: string;
+  fechaDecision: string | null;
+  evidencias: EscalamientoEvidencia[];
+}
+
+export interface EscalamientoEvidencia {
+  id: number;
+  nombreArchivo: string;
+  tipoMime: string;
+  tamano: number;
+  usuario: string;
+  fechaCreacion: string;
+}

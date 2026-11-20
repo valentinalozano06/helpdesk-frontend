@@ -24,8 +24,9 @@
     <label for="categoria">Categoría <span class="requerido">*</span></label>
     <select id="categoria" formControlName="categoriaId">
       <option [ngValue]="null" disabled>Seleccione</option>
-      @for (c of categorias(); track c.id) { <option [ngValue]="c.id">{{ c.nombre }}</option> }
+      @for (c of categorias(); track c.id) { <option [ngValue]="c.id">{{ c.nombre === 'Por clasificar' ? 'No estoy seguro; que TI lo clasifique' : c.nombre }}</option> }
     </select>
+    <small class="ayuda">Si tienes dudas, elige “No estoy seguro”; TI podrá clasificarla después.</small>
   </div>
 
   <div class="form-field">

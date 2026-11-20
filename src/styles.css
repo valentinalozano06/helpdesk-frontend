@@ -73,6 +73,8 @@ button {
 .badge-estado-en_espera { background: #fdf7de; color: #ab8a12; border-color: #f0e3a6; }
 .badge-estado-resuelto { background: #e7f6ec; color: #1f8a4c; border-color: #c1e8cf; }
 .badge-estado-cerrado { background: #edeff2; color: #5a6673; border-color: #d7dce1; }
+.badge-estado-requiere_revision { background: #fff4dd; color: #986d18; border-color: #f0dda9; }
+.badge-estado-no_resuelto { background: #fff0ed; color: #a94c42; border-color: #f0d4cf; }
 
 /* Rol (pantalla Usuarios) */
 .badge-rol { display: inline-block; padding: 3px 10px; border-radius: 6px; font-size: 12px; font-weight: 600; }

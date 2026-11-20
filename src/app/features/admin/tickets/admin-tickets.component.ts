@@ -23,6 +23,7 @@ export class AdminTicketsComponent implements OnInit {
   tickets = signal<Ticket[]>([]);
   prioridades = signal<Catalogo[]>([]);
   estados = signal<Catalogo[]>([]);
+  estadosEditables = computed(() => this.estados().filter(e => !['requiere_revision', 'no_resuelto'].includes(e.nombre)));
   tecnicos = signal<Catalogo[]>([]);
   cargando = signal(true);
   mensajeError = signal<string | null>(null);
@@ -198,7 +199,7 @@ export class AdminTicketsComponent implements OnInit {
   etiquetaEstado(estado: string): string {
     const mapa: Record<string, string> = {
       abierto: 'Abierto', en_progreso: 'En progreso', en_espera: 'En espera',
-      resuelto: 'Resuelto', cerrado: 'Cerrado'
+      resuelto: 'Finalizado', cerrado: 'Cerrado', requiere_revision: 'Requiere revisión', no_resuelto: 'No resuelto'
     };
     return mapa[estado] ?? estado;
   }

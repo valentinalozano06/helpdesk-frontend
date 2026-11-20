@@ -11,7 +11,9 @@
         @case ('abierto') { Solicitud recibida. Pendiente de iniciar la atención. }
         @case ('en_progreso') { El equipo de TI está atendiendo esta solicitud. }
         @case ('en_espera') { La atención está en espera. Revisa los comentarios para conocer los detalles. }
-        @case ('resuelto') { El ticket fue marcado como resuelto. Puedes revisar la solución en los comentarios. }
+          @case ('resuelto') { La atención fue finalizada. Puedes revisar la solución en los comentarios. }
+          @case ('requiere_revision') { El caso fue enviado a Jefatura para revisión. Te avisaremos cuando se actualice. }
+          @case ('no_resuelto') { Jefatura determinó que no fue posible resolver el caso. Revisa la actualización del ticket. }
         @case ('cerrado') { La atención de este ticket ha finalizado. }
       }
     </p>
@@ -24,6 +26,15 @@
   <div class="detalle-grid">
     <main class="contenido-ticket">
       <section class="panel descripcion"><header class="panel-titulo"><span class="icono-seccion" aria-hidden="true"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8 3h8l4 4v14H4V3h4ZM8 11h8M8 15h6"/></svg></span><h2>Descripción del problema</h2></header><p class="texto-descripcion">{{ t.descripcion || 'Sin descripción.' }}</p></section>
+      @if (escalamientoInterno(); as e) {
+        <section class="panel decision-jefatura" aria-labelledby="decision-jefatura-titulo">
+          <header class="panel-titulo"><span class="icono-seccion" aria-hidden="true"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3 4 7v5c0 5 3.5 8 8 9 4.5-1 8-4 8-9V7l-8-4Z"/><path d="m8 12 2.5 2.5L16 9"/></svg></span><h2 id="decision-jefatura-titulo">Revisión de Jefatura</h2><span class="estado-revision" [class.no-resuelto]="e.estado === 'no_resuelto'">{{ e.estado === 'pendiente' ? 'Pendiente' : e.estado === 'devuelto' ? 'Devuelto a TI' : 'No resuelto' }}</span></header>
+          <p class="revision-meta">Enviado {{ config.fecha(e.fechaCreacion) }} · {{ e.tecnico }}</p>
+          <dl class="revision-detalles"><div><dt>Motivo</dt><dd>{{ e.motivo }}</dd></div><div><dt>Diagnóstico de TI</dt><dd>{{ e.diagnostico }}</dd></div><div><dt>Acciones intentadas</dt><dd>{{ e.accionesIntentadas }}</dd></div></dl>
+          @if (e.decision) { <section class="decision-resumen"><h3>Decisión de Jefatura</h3><p>{{ e.decision }}</p><small>{{ e.decisionPor || 'Jefatura' }}@if (e.fechaDecision) { · {{ config.fecha(e.fechaDecision) }} {{ hora(e.fechaDecision) }} }</small></section> }
+          @if (e.evidencias.length) { <div class="evidencia-interna"><h3>Evidencia interna</h3>@for (archivo of e.evidencias; track archivo.id) { <button type="button" (click)="descargarEvidenciaEscalamiento(archivo.id, archivo.nombreArchivo)">{{ archivo.nombreArchivo }} <small>{{ tamanoLegible(archivo.tamano) }}</small></button> }</div> }
+        </section>
+      }
       <section class="panel evidencia" aria-labelledby="evidencia-titulo" [attr.aria-busy]="cargandoAdjuntos()">
         <header class="panel-titulo"><span class="icono-seccion" aria-hidden="true"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 3v5h5M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8l-5-5Z"/><path d="M9 13h6M9 17h4"/></svg></span><h2 id="evidencia-titulo">Evidencia adjunta</h2><span class="contador">{{ adjuntos().length }}</span></header>
         @if (cargandoAdjuntos()) { <p class="mensaje-suave" role="status">Cargando evidencia…</p> }
@@ -104,8 +115,9 @@
         <section class="panel gestion"><h2>Gestionar ticket</h2>
           @if (cargandoGestion()) { <p class="mensaje-suave" role="status">Cargando opciones…</p> }
           <form [formGroup]="gestion" (ngSubmit)="guardarGestion()" [attr.aria-busy]="guardandoGestion()">
-            <fieldset [disabled]="cargandoGestion() || guardandoGestion() || !estados().length || !prioridades().length">
-              <label for="gestion-estado">Estado</label><select id="gestion-estado" formControlName="estado"><option [ngValue]="0" disabled>{{ etiquetaEstado(t.estado) }}</option>@for (e of estadosPermitidos; track e.id) { <option [ngValue]="e.id">{{ etiquetaEstado(e.nombre) }}</option> }</select>
+            <fieldset [disabled]="cargandoGestion() || guardandoGestion() || !estados().length || !prioridades().length || !categorias().length">
+              <label for="gestion-categoria">Categoría</label><select id="gestion-categoria" formControlName="categoria">@for (c of categorias(); track c.id) { <option [ngValue]="c.id">{{ c.nombre }}</option> }</select>
+              <label for="gestion-estado">Estado</label><select id="gestion-estado" formControlName="estado" [disabled]="t.estado === 'requiere_revision' || t.estado === 'no_resuelto'">@for (e of estadosPermitidos; track e.id) { <option [ngValue]="e.id">{{ etiquetaEstado(e.nombre) }}</option> }</select>
               @if (puedeAsignar) { <label for="gestion-prioridad">Prioridad</label><select id="gestion-prioridad" formControlName="prioridad"><option [ngValue]="0" disabled>{{ etiquetaPrioridad(t.prioridad) }}</option>@for (p of prioridades(); track p.id) { <option [ngValue]="p.id">{{ etiquetaPrioridad(p.nombre) }}</option> }</select>
               } @if (puedeAsignar) { <label for="gestion-tecnico">Técnico</label><select id="gestion-tecnico" formControlName="tecnico"><option [ngValue]="0" disabled>{{ t.asignadoA || 'Sin asignar' }}</option>@for (tecnico of tecnicos(); track tecnico.id) { <option [ngValue]="tecnico.id">{{ tecnico.nombre }}</option> }</select> }
               <button class="boton-principal" type="submit" [disabled]="!gestionModificada || guardandoGestion()">{{ guardandoGestion() ? 'Guardando…' : 'Guardar cambios' }}</button>
@@ -113,6 +125,26 @@
           </form>
           @if (errorGestion()) { <p class="mensaje-error" role="alert">{{ errorGestion() }}</p>@if (!estados().length || !prioridades().length) { <button class="boton-secundario" type="button" (click)="cargarGestion()">Reintentar</button> } }
           @if (exitoGestion() && !gestionModificada) { <p class="mensaje-exito" role="status">{{ exitoGestion() }}</p> }
+        </section>
+      }
+      @if (puedeEscalar) {
+        <section class="panel escalamiento" aria-labelledby="escalamiento-titulo">
+          <h2 id="escalamiento-titulo">Solicitar revisión de Jefatura</h2>
+          <p>Esta información y sus archivos serán visibles solo para TI y Jefatura.</p>
+          <form [formGroup]="formularioEscalamiento" (ngSubmit)="enviarEscalamiento()">
+            <label for="escalamiento-motivo">Motivo <span aria-hidden="true">*</span></label>
+            <input id="escalamiento-motivo" formControlName="motivo" maxlength="120" placeholder="Ej. Falla del proveedor externo" />
+            <label for="escalamiento-diagnostico">Diagnóstico <span aria-hidden="true">*</span></label>
+            <textarea id="escalamiento-diagnostico" rows="3" formControlName="diagnostico" maxlength="4000" placeholder="Describe qué encontraste y por qué requiere revisión."></textarea>
+            <label for="escalamiento-acciones">Acciones intentadas <span aria-hidden="true">*</span></label>
+            <textarea id="escalamiento-acciones" rows="3" formControlName="accionesIntentadas" maxlength="4000" placeholder="Indica pruebas, pasos y resultados."></textarea>
+            <label for="escalamiento-archivos">Evidencia interna (opcional)</label>
+            <input id="escalamiento-archivos" type="file" accept=".png,.jpg,.jpeg,.pdf" multiple (change)="seleccionarEvidenciaEscalamiento($event)" />
+            @if (archivosEscalamiento().length) { <ul>@for (a of archivosEscalamiento(); track $index) { <li>{{ a.name }} <button type="button" (click)="quitarEvidenciaEscalamiento($index)">Quitar</button></li> }</ul> }
+            @if (errorEscalamiento()) { <p class="mensaje-error" role="alert">{{ errorEscalamiento() }}</p> }
+            @if (escalamientoIdPendiente()) { <button class="boton-secundario" type="button" (click)="reintentarEvidenciaEscalamiento()" [disabled]="enviandoEscalamiento()">Reintentar evidencia</button> }
+            @else { <button class="boton-principal" type="submit" [disabled]="enviandoEscalamiento() || formularioEscalamiento.invalid">{{ enviandoEscalamiento() ? 'Enviando…' : 'Enviar a Jefatura' }}</button> }
+          </form>
         </section>
       }
       @if (puedeEliminar) {

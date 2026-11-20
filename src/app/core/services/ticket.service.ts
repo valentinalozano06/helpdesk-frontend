@@ -29,6 +29,10 @@ export class TicketService {
     return this.http.patch<Ticket>(`${this.base}/${id}/estado`, { estadoId }).pipe(tap(t => this.config.notificar('cambio', `Ticket ${t.codigoUnico} actualizado`)));
   }
 
+  actualizarCategoria(id: number, categoriaId: number): Observable<Ticket> {
+    return this.http.patch<Ticket>(`${this.base}/${id}/categoria`, { categoriaId }).pipe(tap(t => this.config.notificar('cambio', `Ticket ${t.codigoUnico} reclasificado`)));
+  }
+
   actualizarPrioridad(id: number, prioridadId: number): Observable<Ticket> {
     return this.http.patch<Ticket>(`${this.base}/${id}/prioridad`, { prioridadId }).pipe(tap(t => this.config.notificar('cambio', `Ticket ${t.codigoUnico} actualizado`)));
   }

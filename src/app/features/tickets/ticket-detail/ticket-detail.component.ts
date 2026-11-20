@@ -5,19 +5,22 @@ import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { concat, forkJoin, of, Subscription } from 'rxjs';
+import { concat, forkJoin, of, Subscription, switchMap } from 'rxjs';
 import { TicketService } from '../../../core/services/ticket.service';
+import { EscalamientoService } from '../../../core/services/escalamiento.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { ConfiguracionService } from '../../../core/services/configuracion.service';
 import { CatalogoService } from '../../../core/services/catalogo.service';
 import { UsuarioService } from '../../../core/services/usuario.service';
-import { Catalogo, Comentario, Ticket, Adjunto } from '../../../core/models/ticket.model';
+import { Catalogo, Comentario, Ticket, Adjunto, Escalamiento } from '../../../core/models/ticket.model';
 
 @Component({ selector: 'app-ticket-detail', standalone: true, imports: [CommonModule, ReactiveFormsModule, RouterLink], templateUrl: './ticket-detail.component.html', styleUrl: './ticket-detail.component.css' })
 export class TicketDetailComponent implements OnInit, OnDestroy {
+  private readonly toast = Swal.mixin({ toast: true, position: 'top-end', showConfirmButton: false, timer: 4200, timerProgressBar: true });
   private route = inject(ActivatedRoute);
   private router = inject(Router);
   private api = inject(TicketService);
+  private escalamientoApi = inject(EscalamientoService);
   private catalogos = inject(CatalogoService);
   private usuarios = inject(UsuarioService);
   private fb = inject(FormBuilder);
@@ -37,6 +40,7 @@ export class TicketDetailComponent implements OnInit, OnDestroy {
   ticket = signal<Ticket | null>(null);
   comentarios = signal<Comentario[]>([]);
   adjuntos = signal<Adjunto[]>([]);
+  escalamientoInterno = signal<Escalamiento | null>(null);
   cargandoAdjuntos = signal(false);
   errorAdjuntos = signal('');
   errorEvidencia = signal('');
@@ -58,15 +62,21 @@ export class TicketDetailComponent implements OnInit, OnDestroy {
   errorGestion = signal('');
   exitoGestion = signal('');
   prioridades = signal<Catalogo[]>([]);
+  categorias = signal<Catalogo[]>([]);
   estados = signal<Catalogo[]>([]);
   tecnicos = signal<Catalogo[]>([]);
+  enviandoEscalamiento = signal(false);
+  errorEscalamiento = signal('');
+  escalamientoIdPendiente = signal<number | null>(null);
+  archivosEscalamiento = signal<File[]>([]);
   idValido = signal(false);
   private ticketId = 0;
   private destruido = false;
   private peticiones = new Subscription();
   readonly maxComentario = 2000;
   formularioComentario = this.fb.nonNullable.group({ contenido: ['', [Validators.required, Validators.maxLength(this.maxComentario)]] });
-  gestion = this.fb.nonNullable.group({ prioridad: [0], estado: [0], tecnico: [0] });
+  gestion = this.fb.nonNullable.group({ categoria: [0], prioridad: [0], estado: [0], tecnico: [0] });
+  formularioEscalamiento = this.fb.nonNullable.group({ motivo: ['', [Validators.required, Validators.maxLength(120)]], diagnostico: ['', [Validators.required, Validators.maxLength(4000)]], accionesIntentadas: ['', [Validators.required, Validators.maxLength(4000)]] });
   ordenados = computed(() => [...this.comentarios()].sort((a,b) => (Date.parse(a.fechaCreacion) || 0) - (Date.parse(b.fechaCreacion) || 0) || a.id-b.id));
 
   ngOnInit(): void {
@@ -75,7 +85,8 @@ export class TicketDetailComponent implements OnInit, OnDestroy {
       this.enviandoComentario.set(false); this.guardandoGestion.set(false);
       this.cargandoComentarios.set(false); this.cargandoGestion.set(false);
       this.errorComentarios.set(''); this.errorGestion.set(''); this.exitoGestion.set('');
-      this.prioridades.set([]); this.estados.set([]); this.tecnicos.set([]);
+      this.prioridades.set([]); this.categorias.set([]); this.estados.set([]); this.tecnicos.set([]);
+      this.formularioEscalamiento.reset(); this.archivosEscalamiento.set([]); this.escalamientoIdPendiente.set(null); this.errorEscalamiento.set('');
       const raw = params.get('id') ?? '';
       this.ticketId = Number(raw);
       this.idValido.set(/^[1-9]\d*$/.test(raw) && Number.isSafeInteger(this.ticketId));
@@ -93,11 +104,11 @@ export class TicketDetailComponent implements OnInit, OnDestroy {
     this.peticiones.unsubscribe(); this.peticiones = new Subscription();
     this.adjuntos.set([]); this.cargandoAdjuntos.set(false); this.errorAdjuntos.set('');
     this.errorEvidencia.set(''); this.exitoEvidencia.set(''); this.enviandoEvidencia.set(false);
-    this.ticket.set(null); this.comentarios.set([]); this.mensajeError.set(''); this.errorEnvio.set(''); this.exitoEnvio.set(''); this.formularioComentario.reset();
+    this.ticket.set(null); this.escalamientoInterno.set(null); this.comentarios.set([]); this.mensajeError.set(''); this.errorEnvio.set(''); this.exitoEnvio.set(''); this.formularioComentario.reset();
     if (!this.idValido()) { this.mensajeError.set('El identificador del ticket no es válido.'); this.cargando.set(false); return; }
     this.cargando.set(true);
     this.peticiones.add(this.api.obtener(this.ticketId).subscribe({
-      next: t => { this.ticket.set(t); this.cargando.set(false); this.cargarComentarios(); this.cargarAdjuntos(); if (this.puedeGestionar) this.cargarGestion(); },
+      next: t => { this.ticket.set(t); this.cargando.set(false); this.cargarComentarios(); this.cargarAdjuntos(); if (this.puedeGestionar) this.cargarGestion(); if (this.puedeVerEscalamientoInterno) this.cargarEscalamientoInterno(); },
       error: err => { this.cargando.set(false); this.mensajeError.set(err.status === 404 ? 'No encontramos este ticket.' : err.status === 403 ? 'No tienes acceso a este ticket.' : 'No se pudo cargar el ticket. Inténtalo nuevamente.'); }
     }));
   }
@@ -340,19 +351,33 @@ export class TicketDetailComponent implements OnInit, OnDestroy {
   }
   get puedeGestionar(): boolean { return this.puedeAsignar || (this.authService.tieneRol('rol_tecnico') && this.ticket()?.asignadoAId === this.authService.sesionActual()?.usuarioId); }
   get puedeAsignar(): boolean { return this.authService.tieneRol('rol_admin','rol_jefatura'); }
+  get puedeVerEscalamientoInterno(): boolean { return this.puedeAsignar || (this.authService.tieneRol('rol_tecnico') && this.ticket()?.asignadoAId === this.authService.sesionActual()?.usuarioId); }
+  cargarEscalamientoInterno(): void {
+    if (!this.puedeVerEscalamientoInterno) return;
+    this.peticiones.add(this.escalamientoApi.ultimoDeTicket(this.ticketId).subscribe({
+      next: item => this.escalamientoInterno.set(item),
+      error: () => this.escalamientoInterno.set(null)
+    }));
+  }
+  descargarEvidenciaEscalamiento(id: number, nombre: string): void {
+    this.escalamientoApi.descargarEvidencia(id).subscribe({
+      next: blob => { const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = nombre; a.click(); setTimeout(() => URL.revokeObjectURL(url), 60000); },
+      error: () => void Swal.fire({ icon: 'error', title: 'No se pudo abrir la evidencia interna', confirmButtonText: 'Aceptar', confirmButtonColor: '#173346' })
+    });
+  }
   private normalizar(s: string): string { return s.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim().replace(/\s+/g,'_'); }
   private idCatalogo(datos: Catalogo[], nombre: string): number { return datos.find(d => this.normalizar(d.nombre) === this.normalizar(nombre))?.id ?? 0; }
   cargarGestion(): void {
     if (!this.puedeGestionar || this.cargandoGestion() || this.guardandoGestion()) return;
     this.cargandoGestion.set(true); this.errorGestion.set('');
-    this.peticiones.add(forkJoin({ prioridades: this.catalogos.prioridades(), estados: this.catalogos.estados(), tecnicos: this.puedeAsignar ? this.usuarios.listarTecnicos() : of([] as Catalogo[]) }).subscribe({
-      next: datos => { this.prioridades.set(datos.prioridades); this.estados.set(datos.estados); this.tecnicos.set(datos.tecnicos); this.sincronizarGestion(); this.cargandoGestion.set(false); },
+    this.peticiones.add(forkJoin({ prioridades: this.catalogos.prioridades(), categorias: this.catalogos.categorias(), estados: this.catalogos.estados(), tecnicos: this.puedeAsignar ? this.usuarios.listarTecnicos() : of([] as Catalogo[]) }).subscribe({
+      next: datos => { this.prioridades.set(datos.prioridades); this.categorias.set(datos.categorias); this.estados.set(datos.estados); this.tecnicos.set(datos.tecnicos); this.sincronizarGestion(); this.cargandoGestion.set(false); },
       error: () => { this.cargandoGestion.set(false); this.errorGestion.set('No se pudieron cargar las opciones de gestión.'); }
     }));
   }
   private valoresActuales() {
     const t = this.ticket();
-    return { prioridad: this.idCatalogo(this.prioridades(),t?.prioridad ?? ''), estado: this.idCatalogo(this.estados(),t?.estado ?? ''), tecnico: this.idCatalogo(this.tecnicos(),t?.asignadoA ?? '') };
+    return { categoria: this.idCatalogo(this.categorias(),t?.categoria ?? ''), prioridad: this.idCatalogo(this.prioridades(),t?.prioridad ?? ''), estado: this.idCatalogo(this.estados(),t?.estado ?? ''), tecnico: this.idCatalogo(this.tecnicos(),t?.asignadoA ?? '') };
   }
   private sincronizarGestion(): void { this.gestion.reset(this.valoresActuales()); }
   get gestionModificada(): boolean { return JSON.stringify(this.gestion.getRawValue()) !== JSON.stringify(this.valoresActuales()); }
@@ -360,6 +385,7 @@ export class TicketDetailComponent implements OnInit, OnDestroy {
     if (!this.ticket() || !this.puedeGestionar || this.guardandoGestion() || this.cargandoGestion() || !this.gestionModificada) return;
     const anterior = this.valoresActuales(), nuevo = this.gestion.getRawValue();
     const tareas = [];
+    if (nuevo.categoria && nuevo.categoria !== anterior.categoria && this.categorias().some(c => c.id === nuevo.categoria)) tareas.push(this.api.actualizarCategoria(this.ticketId,nuevo.categoria));
     if (this.puedeAsignar && nuevo.prioridad && nuevo.prioridad !== anterior.prioridad && this.prioridades().some(p => p.id === nuevo.prioridad)) tareas.push(this.api.actualizarPrioridad(this.ticketId,nuevo.prioridad));
     if (nuevo.tecnico && this.puedeAsignar && nuevo.tecnico !== anterior.tecnico && this.tecnicos().some(t => t.id === nuevo.tecnico)) tareas.push(this.api.asignar(this.ticketId,nuevo.tecnico));
     if (nuevo.estado && nuevo.estado !== anterior.estado && this.estados().some(e => e.id === nuevo.estado)) tareas.push(this.api.actualizarEstado(this.ticketId,nuevo.estado));
@@ -373,9 +399,34 @@ export class TicketDetailComponent implements OnInit, OnDestroy {
     }));
   }
   iniciales(nombre: string): string { return nombre.trim().split(/\s+/).slice(0,2).map(p => p[0] || '').join('').toUpperCase(); }
-  etiquetaEstado(estado: string): string { return ({abierto:'Abierto',en_progreso:'En progreso',en_espera:'En espera',resuelto:'Resuelto',cerrado:'Cerrado'} as Record<string,string>)[this.normalizar(estado)] ?? estado; }
+  etiquetaEstado(estado: string): string { return ({abierto:'Abierto',en_progreso:'En progreso',en_espera:'En espera',resuelto:'Finalizado',cerrado:'Cerrado',requiere_revision:'Requiere revisión',no_resuelto:'No resuelto'} as Record<string,string>)[this.normalizar(estado)] ?? estado; }
   etiquetaPrioridad(p: string): string { return this.normalizar(p) === 'critica' ? 'Crítica' : p.charAt(0).toUpperCase() + p.slice(1); }
   hora(valor: string): string { const d = new Date(valor); return isNaN(d.getTime()) ? '' : d.toLocaleTimeString('es-PE',{hour:'2-digit',minute:'2-digit',hour12:false}); }
-  get estadosPermitidos(): Catalogo[] { const actual = this.ticket()?.estado; return this.estados().filter(e => this.puedeAsignar || e.nombre === actual || (['abierto','en_espera'].includes(actual ?? '') && e.nombre === 'en_progreso') || (actual === 'en_progreso' && e.nombre === 'resuelto')); }
+  get estadosPermitidos(): Catalogo[] { const actual = this.ticket()?.estado; return this.estados().filter(e => (e.nombre === actual && ['requiere_revision','no_resuelto'].includes(e.nombre)) || ((this.puedeAsignar || e.nombre === actual || (['abierto','en_espera'].includes(actual ?? '') && e.nombre === 'en_progreso') || (actual === 'en_progreso' && e.nombre === 'resuelto')) && !['requiere_revision','no_resuelto'].includes(e.nombre))); }
+  get puedeEscalar(): boolean { return this.authService.tieneRol('rol_tecnico') && this.puedeGestionar && this.ticket()?.estado === 'en_progreso'; }
+  seleccionarEvidenciaEscalamiento(evento: Event): void {
+    const input = evento.target as HTMLInputElement; const nuevos = Array.from(input.files ?? []); input.value = '';
+    if (this.archivosEscalamiento().length + nuevos.length > 5 || nuevos.some(f => !/\.(png|jpe?g|pdf)$/i.test(f.name) || f.size > this.maxTamano)) { this.errorEscalamiento.set('Adjunta hasta 5 archivos PNG, JPG o PDF de máximo 10 MB cada uno.'); return; }
+    this.errorEscalamiento.set(''); this.archivosEscalamiento.update(xs => [...xs, ...nuevos]);
+  }
+  quitarEvidenciaEscalamiento(i: number): void { this.archivosEscalamiento.update(xs => xs.filter((_, n) => n !== i)); }
+  enviarEscalamiento(): void {
+    if (!this.puedeEscalar || this.enviandoEscalamiento()) return;
+    this.formularioEscalamiento.markAllAsTouched(); if (this.formularioEscalamiento.invalid) return;
+    const v = this.formularioEscalamiento.getRawValue(); this.errorEscalamiento.set(''); this.enviandoEscalamiento.set(true);
+    this.escalamientoApi.solicitar(this.ticketId,v.motivo,v.diagnostico,v.accionesIntentadas).subscribe({
+      next: item => { this.escalamientoIdPendiente.set(item.id); void this.toast.fire({ icon: 'success', title: 'Solicitud enviada a Jefatura', text: 'El caso quedó en revisión.' }); this.subirEvidenciaEscalamiento(); },
+      error: () => { this.enviandoEscalamiento.set(false); this.errorEscalamiento.set('No se pudo escalar el ticket. Actualiza e inténtalo nuevamente.'); }
+    });
+  }
+  private subirEvidenciaEscalamiento(): void {
+    const id = this.escalamientoIdPendiente();
+    const subida = id && this.archivosEscalamiento().length ? this.escalamientoApi.subirEvidencias(id,this.archivosEscalamiento()) : of([]);
+    subida.pipe(switchMap(() => this.api.obtener(this.ticketId))).subscribe({
+      next: ticket => { this.ticket.set(ticket); this.escalamientoIdPendiente.set(null); this.archivosEscalamiento.set([]); this.formularioEscalamiento.reset(); this.enviandoEscalamiento.set(false); this.exitoGestion.set('Ticket escalado a Jefatura.'); this.cargarEscalamientoInterno(); },
+      error: () => { this.enviandoEscalamiento.set(false); this.errorEscalamiento.set('El ticket ya se escaló. No se pudo subir la evidencia; pulsa “Reintentar evidencia”.'); }
+    });
+  }
+  reintentarEvidenciaEscalamiento(): void { if (this.escalamientoIdPendiente() && !this.enviandoEscalamiento()) { this.enviandoEscalamiento.set(true); this.subirEvidenciaEscalamiento(); } }
   get volverA(): string { if (this.authService.tieneRol('rol_tecnico')) return '/mi-cola'; return this.authService.tieneRol('rol_solicitante') ? '/mis-tickets' : '/admin/tickets'; }
 }

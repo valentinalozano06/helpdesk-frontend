@@ -5,7 +5,7 @@ h1 { margin: 0 0 7px; color: #122d3e; font-size: clamp(28px, 2.4vw, 38px); line-
 .page-heading p { margin: 0; color: #667a72; font-size: 15px; }
 .primary-action { display: inline-flex; align-items: center; justify-content: center; gap: 14px; min-height: 46px; padding: 0 18px; border: 1px solid #cbe681; border-radius: 14px; background: var(--app-acento, #d6f58a); color: #173346; font-size: 15px; font-weight: 850; text-decoration: none; box-shadow: 0 12px 26px rgba(126, 156, 82, .16); }
 .primary-action:hover { transform: translateY(-1px); }
-.metrics { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 17px; margin-bottom: 22px; }
+.metrics { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 17px; margin-bottom: 22px; }
 .metric, .panel, .recent-panel { background: #fffffb; border: 1px solid #e4eadf; border-radius: 18px; box-shadow: 0 10px 30px rgba(18,45,62,.05); }
 .metric { padding: 20px 22px; animation: enter .45s both; }
 .metric-top { display: flex; align-items: center; justify-content: space-between; color: #64756d; font-size: 15px; font-weight: 750; }
@@ -81,6 +81,7 @@ tbody tr:hover { background: #fbfdf7; }
 .priority-alta { color: #b98549; }.priority-critica { color: #be6556; }.priority-media { color: #aa9454; }.priority-baja { color: #628e94; }
 .state { display: inline-flex; align-items: center; min-height: 28px; padding: 0 10px; border-radius: 999px; background: #eff1ed; color: #768271; font-size: 13px; font-weight: 800; white-space: nowrap; }
 .state-abierto { background: #fcf0e9; color: #ae7860; }.state-en_progreso { background: #ecf3f5; color: #597f8b; }.state-en_espera { background: #f9f4e8; color: #a38a49; }.state-resuelto { background: #eef5e5; color: #6b9146; }
+.state-requiere_revision { background: #fff4dd; color: #986d18; }.state-no_resuelto { background: #f0f1f2; color: #66717a; }
 .technician { color: #657866; white-space: nowrap; }.unassigned { color: #a38d6b; }
 .row-action { display: grid; place-items: center; width: 34px; height: 34px; border: 1px solid #e4eadc; border-radius: 11px; color: #173346; background: #f7faf0; text-decoration: none; }
 .row-action:hover { background: var(--app-acento, #d6f58a); }

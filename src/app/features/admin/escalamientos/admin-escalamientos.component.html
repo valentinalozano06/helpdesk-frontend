@@ -1,0 +1,18 @@
+<header class="cabecera"><div><h1>Revisión de TI</h1><p>Casos que requieren una decisión de Jefatura.</p></div><button type="button" (click)="cargar()" [disabled]="cargando()">Actualizar</button></header>
+@if (error()) { <p class="aviso error" role="alert">{{ error() }}</p> }
+@if (cargando()) { <section class="panel vacio" role="status">Cargando escalamientos…</section> }
+@else if (!items().length) { <section class="panel vacio"><strong>No hay casos pendientes</strong><p>Los tickets escalados aparecerán aquí para su revisión.</p></section> }
+@else { <section class="lista" aria-label="Escalamientos pendientes">
+  @for (e of items(); track e.id) {
+    <article class="panel caso">
+      <header><div><span class="codigo">{{ e.codigoUnico }}</span><h2>{{ e.asunto }}</h2></div><a [routerLink]="['/tickets', e.ticketId]">Ver ticket</a></header>
+      <dl><div><dt>Solicitante</dt><dd>{{ e.solicitante }}</dd></div><div><dt>Técnico</dt><dd>{{ e.tecnico }}</dd></div><div><dt>Categoría · Prioridad</dt><dd>{{ e.categoria }} · {{ e.prioridad | titlecase }}</dd></div><div><dt>Escalado</dt><dd>{{ e.fechaCreacion | date:'dd/MM/yyyy HH:mm' }}</dd></div></dl>
+      <section class="detalle"><h3>Motivo</h3><p>{{ e.motivo }}</p><h3>Diagnóstico</h3><p class="texto">{{ e.diagnostico }}</p><h3>Acciones intentadas</h3><p class="texto">{{ e.accionesIntentadas }}</p></section>
+      @if (e.evidencias.length) { <section class="archivos"><h3>Evidencia interna</h3>@for (a of e.evidencias; track a.id) { <button type="button" (click)="evidencia(a.id, a.nombreArchivo)">{{ a.nombreArchivo }} <small>{{ bytes(a.tamano) }}</small></button> }</section> }
+      @if (puedeDecidir) { <section class="decision"><label [for]="'decision-' + e.id">Decisión de Jefatura <span aria-hidden="true">*</span></label><textarea [id]="'decision-' + e.id" rows="3" maxlength="4000" [(ngModel)]="decisiones[e.id]" [name]="'decision-' + e.id" placeholder="Explica por qué se devuelve, reasigna o declara no resuelto."></textarea>
+        <label [for]="'tecnico-' + e.id">Técnico nuevo (solo al reasignar)</label><select [id]="'tecnico-' + e.id" [(ngModel)]="reassign[e.id]" [name]="'tecnico-' + e.id"><option [ngValue]="null">Selecciona técnico</option>@for (t of tecnicos(); track t.id) { <option [ngValue]="t.id">{{ t.nombre }}</option> }</select>
+        <div class="acciones"><button type="button" (click)="decidir(e,'devolver')" [disabled]="guardando() !== null">Devolver a TI</button><button type="button" (click)="decidir(e,'reasignar')" [disabled]="guardando() !== null">Reasignar</button><button class="no-resuelto" type="button" (click)="decidir(e,'no_resuelto')" [disabled]="guardando() !== null">Aprobar como no resuelto</button></div>
+      </section> } @else { <p class="solo-lectura">Vista de consulta. Solo Jefatura puede tomar la decisión.</p> }
+    </article>
+  }
+</section> }
