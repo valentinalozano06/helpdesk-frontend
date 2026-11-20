@@ -1,4 +1,4 @@
 export const environment = {
   production: true,
-  apiUrl: 'https://api.mdm-helpdesk.com/api'
+  apiUrl: 'https://api.mdm-helpdesk.aiyond.org/api'
 };
